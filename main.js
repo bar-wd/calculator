@@ -56,6 +56,22 @@ function displayKey(event) {
   // Code that is independent of the beginning state and running total state
   ///////////////////////////////////////////////////////////////////////
 
+  // Clearing the calculator completely
+
+  if (textSelection === 'C') {
+    screenTop.innerText = '';
+    screenBottom.innerText = 0;
+    lastTextSelection = '';
+    lastOperand = '';
+    lastClassSelection = '';
+    total = false;
+  }
+
+  // Clearing the current entry
+  if (textSelection === 'CE') {
+    screenBottom.innerText = 0;
+  }
+
   // Decimal functionality
   if (classSelection === 'decimal') {
     // Only one decimal allowed
