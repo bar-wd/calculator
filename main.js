@@ -10,6 +10,7 @@ let lastOperand;
 let lastClassSelection;
 let lastTextSelection = false;
 let lastBasicOperand;
+let previousNumber = false;
 let percentNumber;
 let total = false;
 let numbers = [];
@@ -25,6 +26,7 @@ function subtract(num) {
 }
 
 function multiply(num) {
+  console.log(num);
   total *= num;
   return total;
 }
@@ -53,7 +55,7 @@ function displayKey(event) {
   let currentNum = Number(event.target.textContent);
 
   ///////////////////////////////////////////////////////////////////////
-  // Code that is independent of the beginning state and running total state
+  // Operations independent of the beginning state and running total state
   ///////////////////////////////////////////////////////////////////////
 
   // Clearing the calculator completely
@@ -85,11 +87,25 @@ function displayKey(event) {
     }
   }
 
+  // Delete functionality
+  if (classSelection === 'delete') {
+    if (screenBottom.innerText.length === 1) {
+      screenBottom.innerText = 0;
+    } else if (
+      lastOperand === 'operand-basic' ||
+      lastOperand === 'operand-advanced'
+    ) {
+      return;
+    } else {
+      screenBottom.innerText = screenBottom.innerText.slice(0, -1);
+    }
+  }
+
   ///////////////////////////////////////////////////////////////////////
   // If there is no total (at the beginning or after a clear)
   ///////////////////////////////////////////////////////////////////////
 
-  if (!total) {
+  if (total === false) {
     // If one of the number keys is pressed with no running total
     if (operand === 'number') {
       if (screenBottom.innerText === '0') {
@@ -111,13 +127,18 @@ function displayKey(event) {
   ///////////////////////////////////////////////////////////////////////
 
   // If one of the number keys is pressed with a running total
-  else if (total) {
+  else if (total !== false) {
     if (operand === 'number') {
       if (lastOperand === 'number' || lastClassSelection === 'decimal') {
         screenBottom.innerText += currentNum;
       } else {
         screenBottom.innerText = currentNum;
       }
+    }
+
+    // Basic operands must be followed by a number. Cannot repeatedly press a basic-operand key. However, it will change the symbol on the screen.
+    else if (operand === 'operand-basic' && lastOperand === 'operand-basic') {
+      screenTop.innerText = `${total} ${textSelection}`;
     }
 
     // If one of the basic operands is pressed (add, subtract, divide, multiply) with a running total
@@ -132,13 +153,20 @@ function displayKey(event) {
       } else if (lastBasicOperand === 'divide') {
         divide(+screenBottom.innerText);
       }
-      screenBottom.innerText = total;
-      screenTop.innerText = `${total} ${textSelection}`;
+      // If '=' is pressed, then display 'num + num = ' otherwise display only one number
+      if (textSelection === '=') {
+        screenTop.innerText += ` ${screenBottom.innerText} ${textSelection}`;
+        screenBottom.innerText = total;
+      } else {
+        screenBottom.innerText = total;
+        screenTop.innerText = `${total} ${textSelection}`;
+      }
     }
   }
   lastTextSelection = textSelection;
   lastOperand = operand;
   lastClassSelection = classSelection;
+  previousNumber = Number(screenBottom.innerText);
 
   // Stores which operand was pressed
   if (operand === 'operand-basic') {
