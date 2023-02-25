@@ -14,8 +14,20 @@ let lastBasicOperand;
 let previousNumber = false;
 let percentNumber;
 let total = false;
-let advancedTotal;
-let numbers = [];
+let multipleEqualSigns;
+let operandForRepeatedEquals;
+
+// function saveState() {
+//   lastTextSelection = textSelection;
+//   lastOperand = operand;
+//   lastClassSelection = classSelection;
+//   previousNumber = Number(screenBottom.innerText);
+
+//   // Stores which operand was pressed
+//   if (operand === 'operand-basic') {
+//     lastBasicOperand = classSelection;
+//   }
+// }
 
 function roundTotal() {
   Number.isInteger(total)
@@ -34,24 +46,29 @@ function roundDecimals(input) {
 function add(num) {
   total += num;
   roundTotal();
+  operandForRepeatedEquals = '+';
+
   return total;
 }
 
 function subtract(num) {
   total -= num;
   roundTotal();
+  operandForRepeatedEquals = '-';
   return total;
 }
 
 function multiply(num) {
   total *= num;
   roundTotal();
+  operandForRepeatedEquals = multiplicationSign;
   return total;
 }
 
 function divide(num) {
   total /= num;
   roundTotal();
+  operandForRepeatedEquals = divisionSign;
   return total;
 }
 
@@ -67,7 +84,7 @@ function percent(num1, num2) {
   return roundDecimals(num1 * (num2 / 100));
 }
 
-function displayKey(event) {
+function calcIndependent(event) {
   const textSelection = event.target.textContent;
   const classSelection = event.target.classList[1];
   const operand = event.target.classList[2];
@@ -87,6 +104,8 @@ function displayKey(event) {
     lastClassSelection = '';
     lastBasicOperand = '';
     total = false;
+    multipleEqualSigns = '';
+    operandForRepeatedEquals = '';
   }
 
   // Clearing the current entry
@@ -165,7 +184,22 @@ function displayKey(event) {
       total = +screenBottom.innerText;
     }
   }
+  lastTextSelection = textSelection;
+  lastOperand = operand;
+  lastClassSelection = classSelection;
+  previousNumber = Number(screenBottom.innerText);
 
+  // Stores which operand was pressed
+  if (operand === 'operand-basic') {
+    lastBasicOperand = classSelection;
+  }
+}
+
+function calcFromBeginningState(event) {
+  const textSelection = event.target.textContent;
+  const classSelection = event.target.classList[1];
+  const operand = event.target.classList[2];
+  let currentNum = Number(event.target.textContent);
   /////////////////////////////////////////////////////////////////////
   // If there is no total (at the beginning or after a clear)
   /////////////////////////////////////////////////////////////////////
@@ -189,10 +223,25 @@ function displayKey(event) {
       screenBottom.innerText = total;
     }
   }
+  lastTextSelection = textSelection;
+  lastOperand = operand;
+  lastClassSelection = classSelection;
+  previousNumber = Number(screenBottom.innerText);
 
-  ///////////////////////////////////////////////////////////////////////
-  // If there is a running total
-  ///////////////////////////////////////////////////////////////////////
+  // Stores which operand was pressed
+  if (operand === 'operand-basic') {
+    lastBasicOperand = classSelection;
+  }
+}
+
+///////////////////////////////////////////////////////////////////////
+// If there is a running total
+///////////////////////////////////////////////////////////////////////
+function calcFromRunningState(event) {
+  const textSelection = event.target.textContent;
+  const classSelection = event.target.classList[1];
+  const operand = event.target.classList[2];
+  let currentNum = Number(event.target.textContent);
 
   // If one of the number keys is pressed with a running total
   if (total !== false) {
@@ -204,6 +253,22 @@ function displayKey(event) {
       }
     }
 
+    // Repeatedly pressing '=' will compute correctly
+    if (textSelection === '=' && lastTextSelection === '=') {
+      screenTop.innerText = `${total} ${operandForRepeatedEquals} ${multipleEqualSigns} ${textSelection}`;
+      if (operandForRepeatedEquals === '+') {
+        add(multipleEqualSigns);
+      } else if (operandForRepeatedEquals === '-') {
+        subtract(multipleEqualSigns);
+      } else if (operandForRepeatedEquals === multiplicationSign) {
+        multiply(multipleEqualSigns);
+      } else if (operandForRepeatedEquals === divisonSign) {
+        divide(multipleEqualSigns);
+      }
+
+      screenBottom.innerText = total;
+    }
+
     // Basic operands must be followed by a number. Cannot repeatedly press a basic-operand key. However, it will change the symbol on the screen.
     else if (operand === 'operand-basic' && lastOperand === 'operand-basic') {
       screenTop.innerText = `${total} ${textSelection}`;
@@ -212,6 +277,8 @@ function displayKey(event) {
     // If one of the basic operands is pressed (add, subtract, divide, multiply) with a running total
     // Executes the previously stored basic operand
     else if (operand === 'operand-basic') {
+      multipleEqualSigns = +screenBottom.innerText;
+
       if (lastBasicOperand === 'add') {
         add(+screenBottom.innerText);
       } else if (lastBasicOperand === 'subtract') {
@@ -221,6 +288,7 @@ function displayKey(event) {
       } else if (lastBasicOperand === 'divide') {
         divide(+screenBottom.innerText);
       }
+
       // If '=' is pressed, then display 'num + num = ' otherwise display only one number
       if (textSelection === '=') {
         if (textSelection === '=' && lastOperand === 'operand-advanced') {
@@ -264,4 +332,8 @@ function displayKey(event) {
   }
 }
 
-keys.forEach(key => key.addEventListener('click', displayKey));
+keys.forEach(key => key.addEventListener('click', calcFromRunningState));
+
+keys.forEach(key => key.addEventListener('click', calcFromBeginningState));
+
+keys.forEach(key => key.addEventListener('click', calcIndependent));
