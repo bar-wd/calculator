@@ -13,7 +13,6 @@ let lastBasicOperand;
 let percentNumber;
 let total = false;
 let numbers = [];
-let currentNum = 0;
 
 function add(num) {
   total += num;
@@ -49,10 +48,26 @@ function percent(num1, num2) {
 
 function displayKey(event) {
   const textSelection = event.target.textContent;
-
   const classSelection = event.target.classList[1];
   const operand = event.target.classList[2];
   let currentNum = Number(event.target.textContent);
+
+  ///////////////////////////////////////////////////////////////////////
+  // Code that is independent of the beginning state and running total state
+  ///////////////////////////////////////////////////////////////////////
+
+  // Decimal functionality
+  if (classSelection === 'decimal') {
+    // Only one decimal allowed
+    if (screenBottom.innerText.includes('.')) return;
+    // If current operation is an operand
+    else if (operand === 'operand-basic') {
+      console.log(operand);
+      screenBottom.innerText = `0.`;
+    } else {
+      screenBottom.innerText += textSelection;
+    }
+  }
 
   ///////////////////////////////////////////////////////////////////////
   // If there is no total (at the beginning or after a clear)
@@ -82,7 +97,7 @@ function displayKey(event) {
   // If one of the number keys is pressed with a running total
   else if (total) {
     if (operand === 'number') {
-      if (lastOperand === 'number') {
+      if (lastOperand === 'number' || lastClassSelection === 'decimal') {
         screenBottom.innerText += currentNum;
       } else {
         screenBottom.innerText = currentNum;
@@ -107,234 +122,12 @@ function displayKey(event) {
   }
   lastTextSelection = textSelection;
   lastOperand = operand;
+  lastClassSelection = classSelection;
 
   // Stores which operand was pressed
   if (operand === 'operand-basic') {
     lastBasicOperand = classSelection;
   }
-}
-
-// if (classSelection === 'add') {
-//     if(screenBottom.innerText = '0') {
-//         screenTop.innerText = `${add(+screenBottom.innerText)} ${textSelection}`;
-//     } else {
-
-//     }
-
-// }
-//   if (classSelection === 'subtract') {
-//     screenTop.innerText = `${subtract(
-//       +screenBottom.innerText
-//     )} ${textSelection}`;
-//   }
-
-//   else if (textSelection === 'CE') {
-//     screenBottom.innerText = '0';
-//   } else if (classSelection === 'percentage') {
-//     numbers.push(Number(screenBottom.innerText));
-//     numbers.push(classSelection);
-//     evaluate(numbers);
-//     screenTop.innerText = `${total} ${lastOperandText} ${percentNumber}`;
-//     screenBottom.innerText = `${total}`;
-//   } else if (classSelection === 'delete') {
-//     screenBottom.innerText = screenBottom.innerText.slice(0, -1);
-//     if (!screenBottom.innerText) screenBottom.innerText = '0';
-//   } else if (textSelection === 'C') {
-//     screenTop.innerText = '';
-//     screenBottom.innerText = '0';
-//     numbers = [];
-//   } else if (classSelection === 'squared') {
-//     if (lastClassSelection === 'squared') {
-//       screenTop.innerText = 'sqr(' + screenTop.innerText + ')';
-//     } else {
-//       screenTop.innerText = `sqr(${screenBottom.innerText})`;
-//     }
-//     // numbers.push(Number(screenBottom.innerText));
-//     // numbers.push(classSelection);
-//     // evaluate(numbers);
-//     screenBottom.innerText = squared(Number(screenBottom.innerText));
-//   } else if (classSelection === 'fraction') {
-//     if (screenBottom.innerText === '0') {
-//       screenBottom.innerText = 'Cannot divide by zero';
-//     } else {
-//       if (lastClassSelection === 'fraction') {
-//         screenTop.innerText = '1/(' + screenTop.innerText + ')';
-//       } else {
-//         screenTop.innerText = `1/((${screenBottom.innerText})`;
-//       }
-//       numbers.push(Number(screenBottom.innerText));
-//       numbers.push(classSelection);
-//       evaluate(numbers);
-//       screenBottom.innerText = `${total}`;
-//     }
-//   } else if (classSelection === 'square-root') {
-//     if (lastClassSelection === 'square-root') {
-//       screenTop.innerText = `${textSelection.slice(0, 1)}(${
-//         screenTop.innerText
-//       })`;
-//     } else {
-//       screenTop.innerText = `${textSelection.slice(0, 1)}(${
-//         screenBottom.innerText
-//       })`;
-//     }
-//     numbers.push(Number(screenBottom.innerText));
-//     numbers.push(classSelection);
-//     evaluate(numbers);
-//     screenBottom.innerText = `${total}`;
-//   } else if (classSelection === 'negative-sign') {
-//     screenBottom.innerText = Number(screenBottom.innerText) * -1;
-//     posNeg = true;
-//   } else if (operand === 'operand') {
-//     if (screenBottom.innerText === '0' && lastOperand === 'operand') {
-//       screenTop.innerText = `${total} ${textSelection}`;
-//     } else {
-//       numbers.push(Number(screenBottom.innerText));
-//       numbers.push(classSelection);
-//       evaluate(numbers);
-//       screenTop.innerText = `${total} ${textSelection}`;
-//       screenBottom.innerText = `${total}`;
-//     }
-//   } else if (textSelection === '=') {
-//     if (screenTop.innerText === '0 =' || lastOperand === 'operand') {
-//       return;
-//     } else {
-//       numbers.push(Number(screenBottom.innerText));
-//       evaluate(numbers);
-//       screenTop.innerText += ` ${screenBottom.innerText} =`;
-//       screenBottom.innerText = total;
-//     }
-//   } else if (lastOperand === 'operand') {
-//     screenBottom.innerText = textSelection;
-//   } else {
-//     screenBottom.innerText += textSelection;
-//   }
-//   lastOperand = event.target.classList[2];
-//   if (operand === 'operand') {
-//     lastOperandText = textSelection;
-//   }
-//   lastClassSelection = classSelection;
-
-// function displayKey(event) {
-//   const textSelection = event.target.textContent;
-//   const classSelection = event.target.classList[1];
-//   const operand = event.target.classList[2];
-
-//   if (screenBottom.innerText === '0' && operand === 'number') {
-//     screenBottom.innerText = textSelection;
-//   } else if (textSelection === 'CE') {
-//     screenBottom.innerText = '0';
-//   } else if (classSelection === 'percentage') {
-//     numbers.push(Number(screenBottom.innerText));
-//     numbers.push(classSelection);
-//     evaluate(numbers);
-//     screenTop.innerText = `${total} ${lastOperandText} ${percentNumber}`;
-//     screenBottom.innerText = `${total}`;
-//   } else if (classSelection === 'delete') {
-//     screenBottom.innerText = screenBottom.innerText.slice(0, -1);
-//     if (!screenBottom.innerText) screenBottom.innerText = '0';
-//   } else if (textSelection === 'C') {
-//     screenTop.innerText = '';
-//     screenBottom.innerText = '0';
-//     numbers = [];
-//   } else if (classSelection === 'squared') {
-//     if (lastClassSelection === 'squared') {
-//       screenTop.innerText = 'sqr(' + screenTop.innerText + ')';
-//     } else {
-//       screenTop.innerText = `sqr(${screenBottom.innerText})`;
-//     }
-//     numbers.push(Number(screenBottom.innerText));
-//     numbers.push(classSelection);
-//     evaluate(numbers);
-//     screenBottom.innerText = `${total}`;
-//   } else if (classSelection === 'fraction') {
-//     if (screenBottom.innerText === '0') {
-//       screenBottom.innerText = 'Cannot divide by zero';
-//     } else {
-//       if (lastClassSelection === 'fraction') {
-//         screenTop.innerText = '1/(' + screenTop.innerText + ')';
-//       } else {
-//         screenTop.innerText = `1/((${screenBottom.innerText})`;
-//       }
-//       numbers.push(Number(screenBottom.innerText));
-//       numbers.push(classSelection);
-//       evaluate(numbers);
-//       screenBottom.innerText = `${total}`;
-//     }
-//   } else if (classSelection === 'square-root') {
-//     if (lastClassSelection === 'square-root') {
-//       screenTop.innerText = `${textSelection.slice(0, 1)}(${
-//         screenTop.innerText
-//       })`;
-//     } else {
-//       screenTop.innerText = `${textSelection.slice(0, 1)}(${
-//         screenBottom.innerText
-//       })`;
-//     }
-
-//     numbers.push(Number(screenBottom.innerText));
-//     numbers.push(classSelection);
-//     evaluate(numbers);
-
-//     screenBottom.innerText = `${total}`;
-//   } else if (classSelection === 'negative-sign') {
-//     screenBottom.innerText = Number(screenBottom.innerText) * -1;
-//     posNeg = true;
-//   } else if (operand === 'operand') {
-//     if (screenBottom.innerText === '0' && lastOperand === 'operand') {
-//       screenTop.innerText = `${total} ${textSelection}`;
-//     } else {
-//       numbers.push(Number(screenBottom.innerText));
-//       numbers.push(classSelection);
-//       evaluate(numbers);
-//       screenTop.innerText = `${total} ${textSelection}`;
-//       screenBottom.innerText = `${total}`;
-//     }
-//   } else if (textSelection === '=') {
-//     if (screenTop.innerText === '0 =' || lastOperand === 'operand') {
-//       return;
-//     } else {
-//       numbers.push(Number(screenBottom.innerText));
-//       evaluate(numbers);
-//       screenTop.innerText += ` ${screenBottom.innerText} =`;
-//       screenBottom.innerText = total;
-//     }
-//   } else if (lastOperand === 'operand') {
-//     screenBottom.innerText = textSelection;
-//   } else {
-//     screenBottom.innerText += textSelection;
-//   }
-//   lastOperand = event.target.classList[2];
-
-//   if (operand === 'operand') {
-//     lastOperandText = textSelection;
-//   }
-//   lastClassSelection = classSelection;
-// }
-
-function evaluate(input) {
-  const result = input.reduce((acc, curr, indx) => {
-    if (input[indx + 1] === 'percentage') {
-      curr = acc * (curr / 100);
-      percentNumber = curr;
-    }
-    if (input[indx] === 'squared') {
-      acc = acc * acc;
-    } else if (input[indx] === 'square-root') {
-      acc = Math.sqrt(acc);
-    } else if (input[indx] === 'fraction') {
-      acc = 1 / acc;
-    } else if (input[indx - 1] === 'addition') {
-      acc += curr;
-    } else if (input[indx - 1] === 'subtraction') {
-      acc -= curr;
-    } else if (input[indx - 1] === 'multiplication') {
-      acc *= curr;
-    } else if (input[indx - 1] === 'division') {
-      acc /= curr;
-    }
-    return acc;
-  });
-  total = +result.toFixed(2);
 }
 
 keys.forEach(key => key.addEventListener('click', displayKey));
