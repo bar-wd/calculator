@@ -16,6 +16,7 @@ let percentNumber;
 let total = false;
 let multipleEqualSigns;
 let operandForRepeatedEquals;
+let lastClassBeginning;
 
 // function saveState() {
 //   lastTextSelection = textSelection;
@@ -148,7 +149,7 @@ function calcIndependent(event) {
   if (operand === 'operand-advanced') {
     if (classSelection === 'squared') {
       // If squared is pressed repeatedly, keep adding sqr() to screen top
-      if (lastClassSelection === 'squared') {
+      if (lastClassBeginning === 'squared') {
         screenTop.innerText = 'sqr(' + screenTop.innerText + ')';
         screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
       } else {
@@ -157,7 +158,9 @@ function calcIndependent(event) {
       }
     } else if (classSelection === 'square-root') {
       // If square root is pressed repeatedly, keep adding sqrt() to screen top
-      if (lastClassSelection === 'square-root') {
+
+      if (lastClassBeginning === 'square-root') {
+        console.log('bug');
         screenTop.innerText =
           `${textSelection.slice(0, 1)}(` + screenTop.innerText + ')';
         screenBottom.innerText = `${squareRoot(+screenBottom.innerText)}`;
@@ -170,7 +173,7 @@ function calcIndependent(event) {
       }
     } else if (classSelection === 'percentage') {
       // If percentage is pressed repeatedly
-      if (lastClassSelection === 'percentage') {
+      if (lastClassBeginning === 'percentage') {
         screenTop.innerText = 'sqr(' + screenTop.innerText + ')';
         screenBottom.innerText = `${percent(+screenBottom.innerText)}`;
       } else {
@@ -184,9 +187,11 @@ function calcIndependent(event) {
       total = +screenBottom.innerText;
     }
   }
+
   lastTextSelection = textSelection;
   lastOperand = operand;
   lastClassSelection = classSelection;
+  lastClassBeginning = classSelection;
   previousNumber = Number(screenBottom.innerText);
 
   // Stores which operand was pressed
@@ -286,7 +291,13 @@ function calcFromRunningState(event) {
       } else if (lastBasicOperand === 'multiply') {
         multiply(+screenBottom.innerText);
       } else if (lastBasicOperand === 'divide') {
-        divide(+screenBottom.innerText);
+        // Prevent from dividing by 0
+
+        if (+screenBottom.innerText === 0) {
+          total = 'Cannot divide by zero';
+        } else {
+          divide(+screenBottom.innerText);
+        }
       }
 
       // If '=' is pressed, then display 'num + num = ' otherwise display only one number
@@ -295,8 +306,13 @@ function calcFromRunningState(event) {
           screenTop.innerText += ` ${textSelection}`;
           screenBottom.innerText = total;
         } else {
-          screenTop.innerText += ` ${screenBottom.innerText} ${textSelection}`;
-          screenBottom.innerText = total;
+          if ((total = 'Cannot divide by zero')) {
+            screenBottom.innerText = total;
+            screenTop.innerText = '';
+          } else {
+            screenTop.innerText += ` ${screenBottom.innerText} ${textSelection}`;
+            screenBottom.innerText = total;
+          }
         }
       }
 
@@ -334,6 +350,6 @@ function calcFromRunningState(event) {
 
 keys.forEach(key => key.addEventListener('click', calcFromRunningState));
 
-keys.forEach(key => key.addEventListener('click', calcFromBeginningState));
-
 keys.forEach(key => key.addEventListener('click', calcIndependent));
+
+keys.forEach(key => key.addEventListener('click', calcFromBeginningState));
