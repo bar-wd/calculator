@@ -16,33 +16,50 @@ let total = false;
 let advancedTotal;
 let numbers = [];
 
+function roundTotal() {
+  Number.isInteger(total)
+    ? (total = total)
+    : (total = Number(+total.toFixed(2)));
+  return total;
+}
+
+function roundDecimals(input) {
+  Number.isInteger(input)
+    ? (input = input)
+    : (input = Number(+input.toFixed(2)));
+  return input;
+}
+
 function add(num) {
   total += num;
-  return total.toFixed(2);
+  roundTotal();
+  return total;
 }
 
 function subtract(num) {
   total -= num;
-  return total.toFixed(2);
+  roundTotal();
+  return total;
 }
 
 function multiply(num) {
-  console.log(num);
   total *= num;
-  return total.toFixed(2);
+  roundTotal();
+  return total;
 }
 
 function divide(num) {
   total /= num;
-  return total.toFixed(2);
+  roundTotal();
+  return total;
 }
 
 function squareRoot(num) {
-  return Math.sqrt(num).toFixed(2);
+  return roundDecimals(Math.sqrt(num));
 }
 
 function squared(num) {
-  return num * num.toFixed(2);
+  return num * num;
 }
 
 function percent(num1, num2) {
@@ -81,7 +98,6 @@ function displayKey(event) {
     if (screenBottom.innerText.includes('.')) return;
     // If current operation is an operand
     else if (operand === 'operand-basic') {
-      console.log(operand);
       screenBottom.innerText = `0.`;
     } else {
       screenBottom.innerText += textSelection;
@@ -134,6 +150,7 @@ function displayKey(event) {
         screenBottom.innerText = `${squareRoot(+screenBottom.innerText)}`;
       }
     }
+    total = +screenBottom.innerText;
   }
 
   /////////////////////////////////////////////////////////////////////
@@ -152,7 +169,9 @@ function displayKey(event) {
 
     // If one of the basic operands is pressed (add, subtract, divide, multiply)
     else if (operand === 'operand-basic') {
-      total = Number(screenBottom.innerText).toFixed(2);
+      // If the initial number is a decimal, round to two decimal places
+      total = Number(screenBottom.innerText);
+      roundDecimals(total);
       screenTop.innerText = `${total} ${textSelection}`;
       screenBottom.innerText = total;
     }
@@ -193,7 +212,13 @@ function displayKey(event) {
       if (textSelection === '=') {
         screenTop.innerText += ` ${screenBottom.innerText} ${textSelection}`;
         screenBottom.innerText = total;
-      } else {
+      }
+      // If the last operand was advanced, don't clear that in the top screen
+      else if (lastOperand === 'operand-advanced') {
+        screenTop.innerText += ` ${textSelection}`;
+      }
+      // If basic operands follow each other, only show one number
+      else {
         screenBottom.innerText = total;
         screenTop.innerText = `${total} ${textSelection}`;
       }
