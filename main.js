@@ -13,35 +13,36 @@ let lastBasicOperand;
 let previousNumber = false;
 let percentNumber;
 let total = false;
+let advancedTotal;
 let numbers = [];
 
 function add(num) {
   total += num;
-  return total;
+  return total.toFixed(2);
 }
 
 function subtract(num) {
   total -= num;
-  return total;
+  return total.toFixed(2);
 }
 
 function multiply(num) {
   console.log(num);
   total *= num;
-  return total;
+  return total.toFixed(2);
 }
 
 function divide(num) {
   total /= num;
-  return total;
+  return total.toFixed(2);
 }
 
 function squareRoot(num) {
-  return Math.sqrt(num);
+  return Math.sqrt(num).toFixed(2);
 }
 
-function squared(num1) {
-  return num1 * num1;
+function squared(num) {
+  return num * num.toFixed(2);
 }
 
 function percent(num1, num2) {
@@ -106,6 +107,35 @@ function displayKey(event) {
     screenBottom.innerText = previousNumber * -1;
   }
 
+  // If an advanced operand is pressed
+  if (operand === 'operand-advanced') {
+    if (classSelection === 'squared') {
+      // If squared is pressed repeatedly, keep adding sqr() to screen top
+      if (lastClassSelection === 'squared') {
+        screenTop.innerText = 'sqr(' + screenTop.innerText + ')';
+        screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
+      } else {
+        screenTop.innerText += ` sqr(${+screenBottom.innerText})`;
+        screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
+      }
+    }
+
+    if (classSelection === 'square-root') {
+      // If square root is pressed repeatedly, keep adding sqrt() to screen top
+      if (lastClassSelection === 'square-root') {
+        screenTop.innerText =
+          `${textSelection.slice(0, 1)}(` + screenTop.innerText + ')';
+        screenBottom.innerText = `${squareRoot(+screenBottom.innerText)}`;
+      } else {
+        screenTop.innerText += ` ${textSelection.slice(
+          0,
+          1
+        )}(${+screenBottom.innerText})`;
+        screenBottom.innerText = `${squareRoot(+screenBottom.innerText)}`;
+      }
+    }
+  }
+
   /////////////////////////////////////////////////////////////////////
   // If there is no total (at the beginning or after a clear)
   /////////////////////////////////////////////////////////////////////
@@ -118,12 +148,13 @@ function displayKey(event) {
       } else {
         screenBottom.innerText += +textSelection;
       }
+    }
 
-      // If one of the basic operands is pressed (add, subtract, divide, multiply)
-    } else if (operand === 'operand-basic') {
-      total = +screenBottom.innerText;
-
+    // If one of the basic operands is pressed (add, subtract, divide, multiply)
+    else if (operand === 'operand-basic') {
+      total = Number(screenBottom.innerText).toFixed(2);
       screenTop.innerText = `${total} ${textSelection}`;
+      screenBottom.innerText = total;
     }
   }
 
