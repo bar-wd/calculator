@@ -43,6 +43,24 @@ function displayKey(event) {
     numbers.push(classSelection);
     evaluate(numbers);
     screenBottom.innerText = `${total}`;
+  } else if (classSelection === 'square-root') {
+    if (lastClassSelection === 'square-root') {
+      screenTop.innerText = `${textSelection.slice(0, 1)}(${
+        screenTop.innerText
+      })`;
+    } else {
+      //   screenTop.innerText = `sqr(${screenBottom.innerText})`;
+      screenTop.innerText = `${textSelection.slice(0, 1)}(${
+        screenBottom.innerText
+      })`;
+    }
+    numbers.push(Number(screenBottom.innerText));
+    numbers.push(classSelection);
+    evaluate(numbers);
+    screenBottom.innerText = `${total}`;
+  } else if (classSelection === 'negative-sign') {
+    screenBottom.innerText = Number(screenBottom.innerText) * -1;
+    posNeg = true;
   } else if (operand === 'operand') {
     numbers.push(Number(screenBottom.innerText));
     numbers.push(classSelection);
@@ -65,6 +83,7 @@ function displayKey(event) {
     lastOperandText = textSelection;
   }
   lastClassSelection = classSelection;
+  console.log(lastOperandText);
 }
 
 function evaluate(input) {
@@ -75,6 +94,8 @@ function evaluate(input) {
     }
     if (input[indx] === 'squared') {
       acc = acc * acc;
+    } else if (input[indx] === 'square-root') {
+      acc = Math.sqrt(acc);
     } else if (input[indx - 1] === 'addition') {
       acc += curr;
     } else if (input[indx - 1] === 'subtraction') {
