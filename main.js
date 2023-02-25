@@ -44,15 +44,19 @@ function displayKey(event) {
     evaluate(numbers);
     screenBottom.innerText = `${total}`;
   } else if (classSelection === 'fraction') {
-    if (lastClassSelection === 'fraction') {
-      screenTop.innerText = '1/(' + screenTop.innerText + ')';
+    if (screenBottom.innerText === '0') {
+      screenBottom.innerText = 'Cannot divide by zero';
     } else {
-      screenTop.innerText = `1/((${screenBottom.innerText})`;
+      if (lastClassSelection === 'fraction') {
+        screenTop.innerText = '1/(' + screenTop.innerText + ')';
+      } else {
+        screenTop.innerText = `1/((${screenBottom.innerText})`;
+      }
+      numbers.push(Number(screenBottom.innerText));
+      numbers.push(classSelection);
+      evaluate(numbers);
+      screenBottom.innerText = `${total}`;
     }
-    numbers.push(Number(screenBottom.innerText));
-    numbers.push(classSelection);
-    evaluate(numbers);
-    screenBottom.innerText = `${total}`;
   } else if (classSelection === 'square-root') {
     if (lastClassSelection === 'square-root') {
       screenTop.innerText = `${textSelection.slice(0, 1)}(${
