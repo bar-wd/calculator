@@ -4,8 +4,9 @@ const keys = document.querySelectorAll('.key');
 const screen = document.querySelector('.screen');
 const screenTop = document.querySelector('.screen-top');
 const screenBottom = document.querySelector('.screen-bottom');
+const divisionSign = '\xF7';
+const multiplicationSign = '\xD7';
 
-let lastOperandText;
 let lastOperand;
 let lastClassSelection;
 let lastTextSelection = false;
@@ -59,11 +60,11 @@ function squareRoot(num) {
 }
 
 function squared(num) {
-  return num * num;
+  return roundDecimals(num * num);
 }
 
 function percent(num1, num2) {
-  return num1 * (num2 / 100);
+  return roundDecimals(num1 * (num2 / 100));
 }
 
 function displayKey(event) {
@@ -84,6 +85,7 @@ function displayKey(event) {
     lastTextSelection = '';
     lastOperand = '';
     lastClassSelection = '';
+    lastBasicOperand = '';
     total = false;
   }
 
@@ -134,9 +136,7 @@ function displayKey(event) {
         screenTop.innerText += ` sqr(${+screenBottom.innerText})`;
         screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
       }
-    }
-
-    if (classSelection === 'square-root') {
+    } else if (classSelection === 'square-root') {
       // If square root is pressed repeatedly, keep adding sqrt() to screen top
       if (lastClassSelection === 'square-root') {
         screenTop.innerText =
@@ -149,8 +149,21 @@ function displayKey(event) {
         )}(${+screenBottom.innerText})`;
         screenBottom.innerText = `${squareRoot(+screenBottom.innerText)}`;
       }
+    } else if (classSelection === 'percentage') {
+      // If percentage is pressed repeatedly
+      if (lastClassSelection === 'percentage') {
+        screenTop.innerText = 'sqr(' + screenTop.innerText + ')';
+        screenBottom.innerText = `${percent(+screenBottom.innerText)}`;
+      } else {
+        screenTop.innerText += ` ${percent(total, +screenBottom.innerText)}`;
+        screenBottom.innerText = `${percent(total, +screenBottom.innerText)}`;
+      }
     }
-    total = +screenBottom.innerText;
+
+    // Initiate the total if no running total
+    if (total === false) {
+      total = +screenBottom.innerText;
+    }
   }
 
   /////////////////////////////////////////////////////////////////////
@@ -182,7 +195,7 @@ function displayKey(event) {
   ///////////////////////////////////////////////////////////////////////
 
   // If one of the number keys is pressed with a running total
-  else if (total !== false) {
+  if (total !== false) {
     if (operand === 'number') {
       if (lastOperand === 'number' || lastClassSelection === 'decimal') {
         screenBottom.innerText += currentNum;
@@ -210,12 +223,28 @@ function displayKey(event) {
       }
       // If '=' is pressed, then display 'num + num = ' otherwise display only one number
       if (textSelection === '=') {
-        screenTop.innerText += ` ${screenBottom.innerText} ${textSelection}`;
-        screenBottom.innerText = total;
+        if (textSelection === '=' && lastOperand === 'operand-advanced') {
+          screenTop.innerText += ` ${textSelection}`;
+          screenBottom.innerText = total;
+        } else {
+          screenTop.innerText += ` ${screenBottom.innerText} ${textSelection}`;
+          screenBottom.innerText = total;
+        }
       }
-      // If the last operand was advanced, don't clear that in the top screen
+
+      // If the last operand was advanced, don't clear the top screen, unless there is already two numbers
       else if (lastOperand === 'operand-advanced') {
-        screenTop.innerText += ` ${textSelection}`;
+        if (
+          screenTop.innerText.includes('+') ||
+          screenTop.innerText.includes('-') ||
+          screenTop.innerText.includes(divisionSign) ||
+          screenTop.innerText.includes(multiplicationSign)
+        ) {
+          screenTop.innerText = `${total} ${textSelection}`;
+          screenBottom.innerText = total;
+        } else {
+          screenTop.innerText += ` ${textSelection}`;
+        }
       }
       // If basic operands follow each other, only show one number
       else {
