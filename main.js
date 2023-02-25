@@ -11,6 +11,14 @@ let percentNumber;
 let total = false;
 let numbers = [];
 
+function squareRoot(num) {
+  return Math.sqrt(num);
+}
+
+function addition(num1, num2) {
+  return num1 + num2;
+}
+
 function displayKey(event) {
   const textSelection = event.target.textContent;
   const classSelection = event.target.classList[1];
@@ -67,24 +75,34 @@ function displayKey(event) {
         screenBottom.innerText
       })`;
     }
+
     numbers.push(Number(screenBottom.innerText));
     numbers.push(classSelection);
     evaluate(numbers);
+
     screenBottom.innerText = `${total}`;
   } else if (classSelection === 'negative-sign') {
     screenBottom.innerText = Number(screenBottom.innerText) * -1;
     posNeg = true;
   } else if (operand === 'operand') {
-    numbers.push(Number(screenBottom.innerText));
-    numbers.push(classSelection);
-    evaluate(numbers);
-    screenTop.innerText = `${total} ${textSelection}`;
-    screenBottom.innerText = `${total}`;
+    if (screenBottom.innerText === '0' && lastOperand === 'operand') {
+      screenTop.innerText = `${total} ${textSelection}`;
+    } else {
+      numbers.push(Number(screenBottom.innerText));
+      numbers.push(classSelection);
+      evaluate(numbers);
+      screenTop.innerText = `${total} ${textSelection}`;
+      screenBottom.innerText = `${total}`;
+    }
   } else if (textSelection === '=') {
-    numbers.push(Number(screenBottom.innerText));
-    evaluate(numbers);
-    screenTop.innerText += ` ${screenBottom.innerText} =`;
-    screenBottom.innerText = total;
+    if (screenTop.innerText === '0 =' || lastOperand === 'operand') {
+      return;
+    } else {
+      numbers.push(Number(screenBottom.innerText));
+      evaluate(numbers);
+      screenTop.innerText += ` ${screenBottom.innerText} =`;
+      screenBottom.innerText = total;
+    }
   } else if (lastOperand === 'operand') {
     screenBottom.innerText = textSelection;
   } else {
@@ -96,8 +114,104 @@ function displayKey(event) {
     lastOperandText = textSelection;
   }
   lastClassSelection = classSelection;
-  console.log(lastOperandText);
 }
+
+// function displayKey(event) {
+//   const textSelection = event.target.textContent;
+//   const classSelection = event.target.classList[1];
+//   const operand = event.target.classList[2];
+
+//   if (screenBottom.innerText === '0' && operand === 'number') {
+//     screenBottom.innerText = textSelection;
+//   } else if (textSelection === 'CE') {
+//     screenBottom.innerText = '0';
+//   } else if (classSelection === 'percentage') {
+//     numbers.push(Number(screenBottom.innerText));
+//     numbers.push(classSelection);
+//     evaluate(numbers);
+//     screenTop.innerText = `${total} ${lastOperandText} ${percentNumber}`;
+//     screenBottom.innerText = `${total}`;
+//   } else if (classSelection === 'delete') {
+//     screenBottom.innerText = screenBottom.innerText.slice(0, -1);
+//     if (!screenBottom.innerText) screenBottom.innerText = '0';
+//   } else if (textSelection === 'C') {
+//     screenTop.innerText = '';
+//     screenBottom.innerText = '0';
+//     numbers = [];
+//   } else if (classSelection === 'squared') {
+//     if (lastClassSelection === 'squared') {
+//       screenTop.innerText = 'sqr(' + screenTop.innerText + ')';
+//     } else {
+//       screenTop.innerText = `sqr(${screenBottom.innerText})`;
+//     }
+//     numbers.push(Number(screenBottom.innerText));
+//     numbers.push(classSelection);
+//     evaluate(numbers);
+//     screenBottom.innerText = `${total}`;
+//   } else if (classSelection === 'fraction') {
+//     if (screenBottom.innerText === '0') {
+//       screenBottom.innerText = 'Cannot divide by zero';
+//     } else {
+//       if (lastClassSelection === 'fraction') {
+//         screenTop.innerText = '1/(' + screenTop.innerText + ')';
+//       } else {
+//         screenTop.innerText = `1/((${screenBottom.innerText})`;
+//       }
+//       numbers.push(Number(screenBottom.innerText));
+//       numbers.push(classSelection);
+//       evaluate(numbers);
+//       screenBottom.innerText = `${total}`;
+//     }
+//   } else if (classSelection === 'square-root') {
+//     if (lastClassSelection === 'square-root') {
+//       screenTop.innerText = `${textSelection.slice(0, 1)}(${
+//         screenTop.innerText
+//       })`;
+//     } else {
+//       screenTop.innerText = `${textSelection.slice(0, 1)}(${
+//         screenBottom.innerText
+//       })`;
+//     }
+
+//     numbers.push(Number(screenBottom.innerText));
+//     numbers.push(classSelection);
+//     evaluate(numbers);
+
+//     screenBottom.innerText = `${total}`;
+//   } else if (classSelection === 'negative-sign') {
+//     screenBottom.innerText = Number(screenBottom.innerText) * -1;
+//     posNeg = true;
+//   } else if (operand === 'operand') {
+//     if (screenBottom.innerText === '0' && lastOperand === 'operand') {
+//       screenTop.innerText = `${total} ${textSelection}`;
+//     } else {
+//       numbers.push(Number(screenBottom.innerText));
+//       numbers.push(classSelection);
+//       evaluate(numbers);
+//       screenTop.innerText = `${total} ${textSelection}`;
+//       screenBottom.innerText = `${total}`;
+//     }
+//   } else if (textSelection === '=') {
+//     if (screenTop.innerText === '0 =' || lastOperand === 'operand') {
+//       return;
+//     } else {
+//       numbers.push(Number(screenBottom.innerText));
+//       evaluate(numbers);
+//       screenTop.innerText += ` ${screenBottom.innerText} =`;
+//       screenBottom.innerText = total;
+//     }
+//   } else if (lastOperand === 'operand') {
+//     screenBottom.innerText = textSelection;
+//   } else {
+//     screenBottom.innerText += textSelection;
+//   }
+//   lastOperand = event.target.classList[2];
+
+//   if (operand === 'operand') {
+//     lastOperandText = textSelection;
+//   }
+//   lastClassSelection = classSelection;
+// }
 
 function evaluate(input) {
   const result = input.reduce((acc, curr, indx) => {
@@ -122,7 +236,7 @@ function evaluate(input) {
     }
     return acc;
   });
-  total = result;
+  total = +result.toFixed(2);
 }
 
 keys.forEach(key => key.addEventListener('click', displayKey));
