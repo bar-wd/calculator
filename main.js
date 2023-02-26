@@ -48,7 +48,6 @@ function add(num) {
   total += num;
   roundTotal();
   operandForRepeatedEquals = '+';
-
   return total;
 }
 
@@ -81,8 +80,26 @@ function squared(num) {
   return roundDecimals(num * num);
 }
 
-function percent(num1, num2) {
-  return roundDecimals(num1 * (num2 / 100));
+// function percent(num1, num2) {
+//   let result;
+//   if (lastBasicOperand === 'add') {
+//     console.log('add');
+//     result = roundDecimals(num1 * (num2 / 100));
+//   } else if (lastBasicOperand === 'multiply') {
+//     result = roundDecimals(1 * (num2 / 100));
+//   } else if (lastBasicOperand === 'subtract') {
+//     result = roundDecimals(1 * (num2 / 100));
+//   } else if (lastBasicOperand === 'divide') {
+//     result = roundDecimals(1 * (num2 / 100));
+//   }
+
+//   return result;
+// }
+
+function fraction(num) {
+  total = 1 / num;
+  roundTotal();
+  return total;
 }
 
 function calcIndependent(event) {
@@ -147,22 +164,60 @@ function calcIndependent(event) {
 
   // If an advanced operand is pressed
   if (operand === 'operand-advanced') {
-    if (classSelection === 'squared') {
+    if (classSelection === 'fraction') {
+      // Cannot divide by zero
+      if (+screenBottom.innerText === 0) {
+        screenBottom.innerText = 'Cannot divide by zero';
+        screenTop.innerText = '';
+      } else {
+        screenTop.innerText = `1/(${screenBottom.innerText})`;
+        fraction(+screenBottom.innerText);
+        screenBottom.innerText = total;
+      }
+    } else if (classSelection === 'squared') {
       // If squared is pressed repeatedly, keep adding sqr() to screen top
       if (lastClassBeginning === 'squared') {
         screenTop.innerText = 'sqr(' + screenTop.innerText + ')';
         screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
       } else {
-        screenTop.innerText += ` sqr(${+screenBottom.innerText})`;
-        screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
+        // If last operation was an operand-advanced, relace the text
+
+        if (
+          lastOperand === 'operand-advanced' &&
+          operand === 'operand-advanced'
+        ) {
+          screenTop.innerText = `sqr(${+screenBottom.innerText})`;
+          screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
+        }
+
+        // if (
+        //   screenTop.innerText.includes('+') ||
+        //   screenTop.innerText.includes('-') ||
+        //   screenTop.innerText.includes(divisionSign) ||
+        //   screenTop.innerText.includes(multiplicationSign)
+        // ) {
+        //   screenTop.innerText = `sqr(${+screenBottom.innerText})`;
+        //   screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
+        // }
+        else {
+          screenTop.innerText += ` sqr(${+screenBottom.innerText})`;
+          screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
+        }
       }
     } else if (classSelection === 'square-root') {
       // If square root is pressed repeatedly, keep adding sqrt() to screen top
 
       if (lastClassBeginning === 'square-root') {
-        console.log('bug');
         screenTop.innerText =
           `${textSelection.slice(0, 1)}(` + screenTop.innerText + ')';
+        screenBottom.innerText = `${squareRoot(+screenBottom.innerText)}`;
+      }
+
+      if (
+        lastOperand === 'operand-advanced' &&
+        operand === 'operand-advanced'
+      ) {
+        screenTop.innerText = `sqr(${+screenBottom.innerText})`;
         screenBottom.innerText = `${squareRoot(+screenBottom.innerText)}`;
       } else {
         screenTop.innerText += ` ${textSelection.slice(
@@ -171,16 +226,29 @@ function calcIndependent(event) {
         )}(${+screenBottom.innerText})`;
         screenBottom.innerText = `${squareRoot(+screenBottom.innerText)}`;
       }
-    } else if (classSelection === 'percentage') {
-      // If percentage is pressed repeatedly
-      if (lastClassBeginning === 'percentage') {
-        screenTop.innerText = 'sqr(' + screenTop.innerText + ')';
-        screenBottom.innerText = `${percent(+screenBottom.innerText)}`;
-      } else {
-        screenTop.innerText += ` ${percent(total, +screenBottom.innerText)}`;
-        screenBottom.innerText = `${percent(total, +screenBottom.innerText)}`;
-      }
     }
+
+    // else if (classSelection === 'percentage') {
+    //   // Pressing % key when screen is 0
+    //   if (screenBottom.innerText === 0 || screenBottom.innerText === '0') {
+    //     screenTop.innerText = 0;
+    //   }
+    //   // If % is pressed repeatedly
+    //   else if (lastClassBeginning === 'percentage') {
+    //     console.log('asdfsdf');
+    //     screenTop.innerText = 'sqr(' + screenTop.innerText + ')';
+    //     screenBottom.innerText = `${percent(+screenBottom.innerText)}`;
+    //   } else {
+    //     if (total === false) {
+    //       screenBottom.innerText = 0;
+    //       screenTop.innerText = 0;
+    //     } else {
+    //       console.log('buggy');
+    //       screenTop.innerText += ` ${percent(total, +screenBottom.innerText)}`;
+    //       screenBottom.innerText = `${percent(total, +screenBottom.innerText)}`;
+    //     }
+    //   }
+    // }
 
     // Initiate the total if no running total
     if (total === false) {
@@ -306,7 +374,7 @@ function calcFromRunningState(event) {
           screenTop.innerText += ` ${textSelection}`;
           screenBottom.innerText = total;
         } else {
-          if ((total = 'Cannot divide by zero')) {
+          if (total === 'Cannot divide by zero') {
             screenBottom.innerText = total;
             screenTop.innerText = '';
           } else {
@@ -348,8 +416,15 @@ function calcFromRunningState(event) {
   }
 }
 
+function errorState(event) {
+  if (total === 'Cannot divide by zero') {
+  }
+}
+
 keys.forEach(key => key.addEventListener('click', calcFromRunningState));
 
 keys.forEach(key => key.addEventListener('click', calcIndependent));
 
 keys.forEach(key => key.addEventListener('click', calcFromBeginningState));
+
+keys.forEach(key => key.addEventListener('click', errorState));
