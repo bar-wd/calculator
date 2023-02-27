@@ -2,33 +2,326 @@
 
 const keys = document.querySelectorAll('.key');
 const screen = document.querySelector('.screen');
-const screenTop = document.querySelector('.screen-top');
-const screenBottom = document.querySelector('.screen-bottom');
 const divisionSign = '\xF7';
 const multiplicationSign = '\xD7';
+const screenBottom = document.querySelector('.screen-bottom');
+const screenTop = document.querySelector('.screen-top');
 
-let lastOperand;
-let lastClassSelection;
-let lastTextSelection = false;
-let lastBasicOperand;
-let previousNumber = false;
-let percentNumber;
-let total = false;
-let multipleEqualSigns;
-let operandForRepeatedEquals;
-let lastClassBeginning;
+/////////////////////////////////////////////////////////////////////
+// Calculator Keys
 
-// function saveState() {
-//   lastTextSelection = textSelection;
-//   lastOperand = operand;
-//   lastClassSelection = classSelection;
-//   previousNumber = Number(screenBottom.innerText);
+const keyClearEntry = document.getElementById('key-clear-entry');
+const keyClearCalculator = document.getElementById('key-clear-calculator');
+const keyDelete = document.getElementById('key-delete');
+const keyAdd = document.getElementById('key-add');
+const keyNumbers = document.querySelectorAll('.number');
+const keyBasicOperands = document.querySelectorAll('.operand-basic');
+const keyPosNeg = document.getElementById('key-pos-neg');
+const keyDecimal = document.getElementById('key-decimal');
+const keySquared = document.getElementById('key-squared');
+const keyEquals = document.getElementById('key-equals');
 
-//   // Stores which operand was pressed
-//   if (operand === 'operand-basic') {
-//     lastBasicOperand = classSelection;
-//   }
+/////////////////////////////////////////////////////////////////////
+
+let total = 0;
+let previousTotal = false;
+let numForEquals;
+
+const currentKey = {
+  text: '',
+  // Either 'one', 'add', or 'square'
+  operand: '',
+  // Either 'number', 'operand-basic', 'operand-advanced', 'operand-equals'
+  operandType: '',
+};
+
+const previousKey = {
+  text: '',
+  // Either 'one', 'add', or 'square'
+  operand: '',
+  // Either 'number', 'operand-basic', 'operand-advanced', 'operand-equals'
+  operandType: '',
+};
+
+const previousBasicOperand = {
+  text: '',
+  // Either 'one', 'add', or 'square'
+  operand: '',
+  // Either 'number', 'operand-basic', 'operand-advanced', 'operand-equals'
+  operandType: '',
+};
+
+/////////////////////////////////////////////////////////////////////
+// State of Calculator
+
+function storeCurrentKey() {
+  currentKey.text = event.target.textContent;
+  currentKey.operand = event.target.classList[1];
+  currentKey.operandType = event.target.classList[2];
+  previousTotal = total;
+}
+
+function storePreviousKey() {
+  previousKey.text = event.target.textContent;
+  previousKey.operand = event.target.classList[1];
+  previousKey.operandType = event.target.classList[2];
+}
+
+function storePreviousBasicOperand() {
+  previousBasicOperand.text = event.target.textContent;
+  previousBasicOperand.operand = event.target.classList[1];
+  previousBasicOperandType = event.target.classList[2];
+}
+
+function storePrevious() {
+  storePreviousKey();
+  storePreviousBasicOperand();
+  numForEquals = +screenBottom.innerText;
+}
+// function evalOperations(inpt) {
+//   // return array.reduce((acc, curr) => {
+//   //   acc = objFunc[curr](acc);
+//   //   console.log(acc, 'acc');
+//   //   return acc;
+//   // });
 // }
+
+const objFunc = {
+  equals: function (event) {
+    storeCurrentKey();
+
+    // Prevents from being able to repeatedly press '=' in the beginning
+
+    if (!previousBasicOperand.operand) {
+      `${total} ${currentKey.text}`;
+      screenBottom.innerText = total;
+    }
+    //   previousBasicOperand.text
+    // } ${+screenBottom.innerText} ${currentKey.text}`;
+    // screenBottom.innerText = total;
+
+    // Repeatedly pressing the '='
+    else if (previousKey.operandType === 'operand-equals') {
+      objFunc[previousBasicOperand.operand](numForEquals);
+      screenTop.innerText = `${previousTotal} ${previousBasicOperand.text} ${numForEquals} ${currentKey.text}`;
+      screenBottom.innerText = total;
+    } else {
+      objFunc[previousBasicOperand.operand](+screenBottom.innerText);
+      screenTop.innerText = `${previousTotal} ${
+        previousBasicOperand.text
+      } ${+screenBottom.innerText} ${currentKey.text}`;
+      screenBottom.innerText = total;
+    }
+
+    storePreviousKey();
+  },
+  funcBasicOperands: function (event) {
+    storeCurrentKey();
+
+    // Prevents being able to repeatedly press a basic operand
+    if (
+      currentKey.operandType === 'operand-basic' &&
+      previousKey.operandType === 'operand-basic'
+    ) {
+      previousKey.operand = currentKey.operand;
+    } else if (previousKey.operandType === 'operand-equals') {
+      screenTop.innerText = `${total} ${currentKey.text}`;
+      screenBottom.innerText = total;
+    } else {
+      total = objFunc[previousBasicOperand.operand]
+        ? objFunc[previousBasicOperand.operand](+screenBottom.innerText)
+        : +screenBottom.innerText;
+
+      screenTop.innerText = `${total} ${currentKey.text}`;
+      screenBottom.innerText = total;
+    }
+
+    storePrevious();
+
+    // if (screenBottom.innerText === '0' || screenBottom.innerText === 0) {
+    //   screenTop.innerText = `0 ${textSelection}`;
+    // }
+    // // Basic operands must be followed by a number. Cannot repeatedly press a basic-operand key. However, it will change the symbol on the screen.
+    // else if (operand === 'operand-basic' && lastOperand === 'operand-basic') {
+    //   screenTop.innerText = `${total} ${textSelection}`;
+    // }
+    // // Basic operand at the beginning
+    // else if (lastBasicOperand === false) {
+    //   // If the initial number is a decimal, round to two decimal places
+    //   total += +screenBottom.innerText;
+
+    //   roundTotal();
+
+    //   screenTop.innerText = `${total} ${textSelection}`;
+    //   screenBottom.innerText = total;
+    //   // If an operand advanced proceeds a basic operand
+    // } else if (lastOperand === 'operand-advanced') {
+    //   // If it already contains the following, make screenTop the total
+    //   if (
+    //     screenTop.innerText.includes('+') ||
+    //     screenTop.innerText.includes('-') ||
+    //     screenTop.innerText.includes(divisionSign) ||
+    //     screenTop.innerText.includes(multiplicationSign)
+    //   ) {
+    //     total += +screenBottom.innerText;
+    //     screenTop.innerText = `${total} ${textSelection}`;
+    //     screenBottom.innerText = `${total}`;
+    //   } else {
+    //     screenTop.innerText += ` ${textSelection}`;
+    //     total += +screenBottom.innerText;
+    //   }
+    // } else {
+    //   // Call the appropriate function from objFunc based on lastBasicOperand
+    //   console.log(lastBasicOperand);
+    //   objFunc[lastBasicOperand](+screenBottom.innerText);
+
+    //   // Check to see if divided by 0
+    //   if (total === 'Cannot divide by zero') {
+    //     screenTop.innerText = '';
+    //     screenBottom.innerText = total;
+    //   } else {
+    //     screenTop.innerText = `${total} ${textSelection}`;
+    //     screenBottom.innerText = total;
+    //   }
+    // }
+  },
+
+  add: function (num) {
+    total += num;
+    roundTotal();
+    return total;
+  },
+  subtract: function (num) {
+    total -= num;
+    roundTotal();
+    return total;
+  },
+  multiply: function (num) {
+    total *= num;
+    roundTotal();
+    return total;
+  },
+  divide: function (num) {
+    if (num === 0) {
+      total = 'Cannot divide by zero';
+      return total;
+    } else {
+      total /= num;
+      roundTotal();
+
+      return total;
+    }
+  },
+  squareRoot: function (num) {
+    return roundDecimals(Math.sqrt(num));
+  },
+  squared: function (event) {
+    storeCurrentKey();
+
+    // If squared is pressed repeatedly, keep adding sqr() to screen top
+    if (lastOperand === 'operand-advanced') {
+      screenTop.innerText = 'sqr(' + screenTop.innerText + ')';
+      screenBottom.innerText = `${
+        +screenBottom.innerText * +screenBottom.innerText
+      }`;
+    } else {
+      // If last operation was an operand-advanced, replace the text
+      if (
+        lastOperand === 'operand-advanced' &&
+        operand === 'operand-advanced'
+      ) {
+        screenTop.innerText = `sqr(${+screenBottom.innerText})`;
+        screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
+      } else {
+        screenTop.innerText += ` sqr(${+screenBottom.innerText})`;
+        screenBottom.innerText = `${
+          +screenBottom.innerText * +screenBottom.innerText
+        }`;
+      }
+    }
+
+    lastBasicOperand = classSelection;
+    lastOperand = operand;
+  },
+  fraction: function (num) {
+    total = 1 / num;
+    roundTotal();
+    return total;
+  },
+
+  clear: function (event) {
+    total = 0;
+    previousTotal = false;
+    numForEquals;
+    screenBottom.innerText = 0;
+    screenTop.innerText = '';
+
+    for (key in currentKey) {
+      currentKey[key] = '';
+    }
+
+    for (key in previousKey) {
+      previousKey[key] = '';
+    }
+
+    for (key in previousBasicOperand) {
+      previousBasicOperand[key] = '';
+    }
+
+    numForEquals = '';
+  },
+  // Clearing the current entry
+  clearEntry: function (event) {
+    screenBottom.innerText = 0;
+  },
+  // Delete a number
+  delete: function () {
+    if (screenBottom.innerText.length === 1) {
+      screenBottom.innerText = 0;
+    }
+
+    // else if (
+    //   lastOperand === 'operand-basic' ||
+    //   lastOperand === 'operand-advanced'
+    // ) {
+    //   return;
+    // }
+    else {
+      screenBottom.innerText = screenBottom.innerText.slice(0, -1);
+    }
+  },
+  funcPosNeg: function (event) {
+    screenBottom.innerText = +screenBottom.innerText * -1;
+  },
+
+  inputNum: function () {
+    storeCurrentKey();
+
+    if (
+      screenBottom.innerText === '0' ||
+      previousKey.operandType === 'operand-basic' ||
+      previousKey.operandType === 'operand-advanced'
+    ) {
+      screenBottom.innerText = +currentKey.text;
+    } else {
+      screenBottom.innerText += +currentKey.text;
+    }
+    numForEquals = +screenBottom.innerText;
+    storePreviousKey();
+  },
+  // Decimal Functionality
+  displayDecimal: function () {
+    storeCurrentKey();
+    // Only one decimal allowed
+    if (screenBottom.innerText.includes('.')) return;
+    else {
+      screenBottom.innerText += '.';
+    }
+  },
+};
+
+//////////////////////////////////////////////////////////////////////
+// Rounding Functions
 
 function roundTotal() {
   Number.isInteger(total)
@@ -43,125 +336,112 @@ function roundDecimals(input) {
     : (input = Number(+input.toFixed(2)));
   return input;
 }
-
-function add(num) {
-  total += num;
-  roundTotal();
-  operandForRepeatedEquals = '+';
-  return total;
+function calcFromBeginningState(event) {
+  // If one of the basic operands is pressed (add, subtract, divide, multiply)
+  if (operand === 'operand-basic') {
+    // If the initial number is a decimal, round to two decimal places
+    total = Number(screenBottom.innerText);
+    roundDecimals(total);
+    screenTop.innerText = `${total} ${textSelection}`;
+    screenBottom.innerText = total;
+  }
 }
 
-function subtract(num) {
-  total -= num;
-  roundTotal();
-  operandForRepeatedEquals = '-';
-  return total;
+///////////////////////////////////////////////////////////////////////
+// If there is a running total
+
+function errorState(event) {
+  if (total === 'Cannot divide by zero') {
+  }
 }
 
-function multiply(num) {
-  total *= num;
-  roundTotal();
-  operandForRepeatedEquals = multiplicationSign;
-  return total;
-}
+///////////////////////////////////////////////////////////////////////
+// Event Listeners
 
-function divide(num) {
-  total /= num;
-  roundTotal();
-  operandForRepeatedEquals = divisionSign;
-  return total;
-}
+// Numbers
+keyNumbers.forEach(num => num.addEventListener('click', objFunc['inputNum']));
 
-function squareRoot(num) {
-  return roundDecimals(Math.sqrt(num));
-}
+// Addition, subtraction, multiplication, division
+keyBasicOperands.forEach(key =>
+  key.addEventListener('click', objFunc['funcBasicOperands'])
+);
 
-function squared(num) {
-  return roundDecimals(num * num);
-}
+// Change the sign of the number
+keyPosNeg.addEventListener('click', objFunc['funcPosNeg']);
 
-// function percent(num1, num2) {
-//   let result;
-//   if (lastBasicOperand === 'add') {
-//     console.log('add');
-//     result = roundDecimals(num1 * (num2 / 100));
-//   } else if (lastBasicOperand === 'multiply') {
-//     result = roundDecimals(1 * (num2 / 100));
-//   } else if (lastBasicOperand === 'subtract') {
-//     result = roundDecimals(1 * (num2 / 100));
-//   } else if (lastBasicOperand === 'divide') {
-//     result = roundDecimals(1 * (num2 / 100));
-//   }
+// Clear entire calculator
+keyClearCalculator.addEventListener('click', objFunc['clear']);
 
-//   return result;
-// }
+// Clear entry
+keyClearEntry.addEventListener('click', objFunc['clearEntry']);
 
-function fraction(num) {
-  total = 1 / num;
-  roundTotal();
-  return total;
+// Delete
+keyDelete.addEventListener('click', objFunc['delete']);
+
+// Decimal
+keyDecimal.addEventListener('click', objFunc['displayDecimal']);
+
+// Squared
+keySquared.addEventListener('click', objFunc['squared']);
+
+// Equals
+keyEquals.addEventListener('click', objFunc['equals']);
+
+function calcFromRunningState(event) {
+  // Repeatedly pressing '=' will compute correctly
+  if (textSelection === '=' && lastTextSelection === '=') {
+    screenTop.innerText = `${total} ${operandForRepeatedEquals} ${multipleEqualSigns} ${textSelection}`;
+    if (operandForRepeatedEquals === '+') {
+      add(multipleEqualSigns);
+    } else if (operandForRepeatedEquals === '-') {
+      subtract(multipleEqualSigns);
+    } else if (operandForRepeatedEquals === multiplicationSign) {
+      multiply(multipleEqualSigns);
+    } else if (operandForRepeatedEquals === divisonSign) {
+      divide(multipleEqualSigns);
+    }
+
+    screenBottom.innerText = total;
+
+    // If '=' is pressed, then display 'num + num = ' otherwise display only one number
+    if (textSelection === '=') {
+      if (textSelection === '=' && lastOperand === 'operand-advanced') {
+        screenTop.innerText += ` ${textSelection}`;
+        screenBottom.innerText = total;
+      } else {
+        if (total === 'Cannot divide by zero') {
+          screenBottom.innerText = total;
+          screenTop.innerText = '';
+        } else {
+          screenTop.innerText += ` ${screenBottom.innerText} ${textSelection}`;
+          screenBottom.innerText = total;
+        }
+      }
+    }
+
+    // If the last operand was advanced, don't clear the top screen, unless there is already two numbers
+    if (lastOperand === 'operand-advanced') {
+      if (
+        screenTop.innerText.includes('+') ||
+        screenTop.innerText.includes('-') ||
+        screenTop.innerText.includes(divisionSign) ||
+        screenTop.innerText.includes(multiplicationSign)
+      ) {
+        screenTop.innerText = `${total} ${textSelection}`;
+        screenBottom.innerText = total;
+      } else {
+        screenTop.innerText += ` ${textSelection}`;
+      }
+    }
+    // If basic operands follow each other, only show one number
+    else {
+      screenBottom.innerText = total;
+      screenTop.innerText = `${total} ${textSelection}`;
+    }
+  }
 }
 
 function calcIndependent(event) {
-  const textSelection = event.target.textContent;
-  const classSelection = event.target.classList[1];
-  const operand = event.target.classList[2];
-  let currentNum = Number(event.target.textContent);
-
-  ///////////////////////////////////////////////////////////////////////
-  // Operations independent of the state
-  ///////////////////////////////////////////////////////////////////////
-
-  // Clearing the calculator completely
-
-  if (textSelection === 'C') {
-    screenTop.innerText = '';
-    screenBottom.innerText = 0;
-    lastTextSelection = '';
-    lastOperand = '';
-    lastClassSelection = '';
-    lastBasicOperand = '';
-    total = false;
-    multipleEqualSigns = '';
-    operandForRepeatedEquals = '';
-  }
-
-  // Clearing the current entry
-  if (textSelection === 'CE') {
-    screenBottom.innerText = 0;
-  }
-
-  // Decimal functionality
-  if (classSelection === 'decimal') {
-    // Only one decimal allowed
-    if (screenBottom.innerText.includes('.')) return;
-    // If current operation is an operand
-    else if (operand === 'operand-basic') {
-      screenBottom.innerText = `0.`;
-    } else {
-      screenBottom.innerText += textSelection;
-    }
-  }
-
-  // Delete functionality
-  if (classSelection === 'delete') {
-    if (screenBottom.innerText.length === 1) {
-      screenBottom.innerText = 0;
-    } else if (
-      lastOperand === 'operand-basic' ||
-      lastOperand === 'operand-advanced'
-    ) {
-      return;
-    } else {
-      screenBottom.innerText = screenBottom.innerText.slice(0, -1);
-    }
-  }
-
-  // +/- Functionality
-  if (textSelection === '+/-') {
-    screenBottom.innerText = previousNumber * -1;
-  }
-
   // If an advanced operand is pressed
   if (operand === 'operand-advanced') {
     if (classSelection === 'fraction') {
@@ -174,37 +454,9 @@ function calcIndependent(event) {
         fraction(+screenBottom.innerText);
         screenBottom.innerText = total;
       }
-    } else if (classSelection === 'squared') {
-      // If squared is pressed repeatedly, keep adding sqr() to screen top
-      if (lastClassBeginning === 'squared') {
-        screenTop.innerText = 'sqr(' + screenTop.innerText + ')';
-        screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
-      } else {
-        // If last operation was an operand-advanced, relace the text
+    }
 
-        if (
-          lastOperand === 'operand-advanced' &&
-          operand === 'operand-advanced'
-        ) {
-          screenTop.innerText = `sqr(${+screenBottom.innerText})`;
-          screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
-        }
-
-        // if (
-        //   screenTop.innerText.includes('+') ||
-        //   screenTop.innerText.includes('-') ||
-        //   screenTop.innerText.includes(divisionSign) ||
-        //   screenTop.innerText.includes(multiplicationSign)
-        // ) {
-        //   screenTop.innerText = `sqr(${+screenBottom.innerText})`;
-        //   screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
-        // }
-        else {
-          screenTop.innerText += ` sqr(${+screenBottom.innerText})`;
-          screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
-        }
-      }
-    } else if (classSelection === 'square-root') {
+    if (classSelection === 'square-root') {
       // If square root is pressed repeatedly, keep adding sqrt() to screen top
 
       if (lastClassBeginning === 'square-root') {
@@ -227,204 +479,5 @@ function calcIndependent(event) {
         screenBottom.innerText = `${squareRoot(+screenBottom.innerText)}`;
       }
     }
-
-    // else if (classSelection === 'percentage') {
-    //   // Pressing % key when screen is 0
-    //   if (screenBottom.innerText === 0 || screenBottom.innerText === '0') {
-    //     screenTop.innerText = 0;
-    //   }
-    //   // If % is pressed repeatedly
-    //   else if (lastClassBeginning === 'percentage') {
-    //     console.log('asdfsdf');
-    //     screenTop.innerText = 'sqr(' + screenTop.innerText + ')';
-    //     screenBottom.innerText = `${percent(+screenBottom.innerText)}`;
-    //   } else {
-    //     if (total === false) {
-    //       screenBottom.innerText = 0;
-    //       screenTop.innerText = 0;
-    //     } else {
-    //       console.log('buggy');
-    //       screenTop.innerText += ` ${percent(total, +screenBottom.innerText)}`;
-    //       screenBottom.innerText = `${percent(total, +screenBottom.innerText)}`;
-    //     }
-    //   }
-    // }
-
-    // Initiate the total if no running total
-    if (total === false) {
-      total = +screenBottom.innerText;
-    }
-  }
-
-  lastTextSelection = textSelection;
-  lastOperand = operand;
-  lastClassSelection = classSelection;
-  lastClassBeginning = classSelection;
-  previousNumber = Number(screenBottom.innerText);
-
-  // Stores which operand was pressed
-  if (operand === 'operand-basic') {
-    lastBasicOperand = classSelection;
   }
 }
-
-function calcFromBeginningState(event) {
-  const textSelection = event.target.textContent;
-  const classSelection = event.target.classList[1];
-  const operand = event.target.classList[2];
-  let currentNum = Number(event.target.textContent);
-  /////////////////////////////////////////////////////////////////////
-  // If there is no total (at the beginning or after a clear)
-  /////////////////////////////////////////////////////////////////////
-
-  if (total === false) {
-    // If one of the number keys is pressed with no running total
-    if (operand === 'number') {
-      if (screenBottom.innerText === '0') {
-        screenBottom.innerText = +textSelection;
-      } else {
-        screenBottom.innerText += +textSelection;
-      }
-    }
-
-    // If one of the basic operands is pressed (add, subtract, divide, multiply)
-    else if (operand === 'operand-basic') {
-      // If the initial number is a decimal, round to two decimal places
-      total = Number(screenBottom.innerText);
-      roundDecimals(total);
-      screenTop.innerText = `${total} ${textSelection}`;
-      screenBottom.innerText = total;
-    }
-  }
-  lastTextSelection = textSelection;
-  lastOperand = operand;
-  lastClassSelection = classSelection;
-  previousNumber = Number(screenBottom.innerText);
-
-  // Stores which operand was pressed
-  if (operand === 'operand-basic') {
-    lastBasicOperand = classSelection;
-  }
-}
-
-///////////////////////////////////////////////////////////////////////
-// If there is a running total
-///////////////////////////////////////////////////////////////////////
-function calcFromRunningState(event) {
-  const textSelection = event.target.textContent;
-  const classSelection = event.target.classList[1];
-  const operand = event.target.classList[2];
-  let currentNum = Number(event.target.textContent);
-
-  // If one of the number keys is pressed with a running total
-  if (total !== false) {
-    if (operand === 'number') {
-      if (lastOperand === 'number' || lastClassSelection === 'decimal') {
-        screenBottom.innerText += currentNum;
-      } else {
-        screenBottom.innerText = currentNum;
-      }
-    }
-
-    // Repeatedly pressing '=' will compute correctly
-    if (textSelection === '=' && lastTextSelection === '=') {
-      screenTop.innerText = `${total} ${operandForRepeatedEquals} ${multipleEqualSigns} ${textSelection}`;
-      if (operandForRepeatedEquals === '+') {
-        add(multipleEqualSigns);
-      } else if (operandForRepeatedEquals === '-') {
-        subtract(multipleEqualSigns);
-      } else if (operandForRepeatedEquals === multiplicationSign) {
-        multiply(multipleEqualSigns);
-      } else if (operandForRepeatedEquals === divisonSign) {
-        divide(multipleEqualSigns);
-      }
-
-      screenBottom.innerText = total;
-    }
-
-    // Basic operands must be followed by a number. Cannot repeatedly press a basic-operand key. However, it will change the symbol on the screen.
-    else if (operand === 'operand-basic' && lastOperand === 'operand-basic') {
-      screenTop.innerText = `${total} ${textSelection}`;
-    }
-
-    // If one of the basic operands is pressed (add, subtract, divide, multiply) with a running total
-    // Executes the previously stored basic operand
-    else if (operand === 'operand-basic') {
-      multipleEqualSigns = +screenBottom.innerText;
-
-      if (lastBasicOperand === 'add') {
-        add(+screenBottom.innerText);
-      } else if (lastBasicOperand === 'subtract') {
-        subtract(+screenBottom.innerText);
-      } else if (lastBasicOperand === 'multiply') {
-        multiply(+screenBottom.innerText);
-      } else if (lastBasicOperand === 'divide') {
-        // Prevent from dividing by 0
-
-        if (+screenBottom.innerText === 0) {
-          total = 'Cannot divide by zero';
-        } else {
-          divide(+screenBottom.innerText);
-        }
-      }
-
-      // If '=' is pressed, then display 'num + num = ' otherwise display only one number
-      if (textSelection === '=') {
-        if (textSelection === '=' && lastOperand === 'operand-advanced') {
-          screenTop.innerText += ` ${textSelection}`;
-          screenBottom.innerText = total;
-        } else {
-          if (total === 'Cannot divide by zero') {
-            screenBottom.innerText = total;
-            screenTop.innerText = '';
-          } else {
-            screenTop.innerText += ` ${screenBottom.innerText} ${textSelection}`;
-            screenBottom.innerText = total;
-          }
-        }
-      }
-
-      // If the last operand was advanced, don't clear the top screen, unless there is already two numbers
-      else if (lastOperand === 'operand-advanced') {
-        if (
-          screenTop.innerText.includes('+') ||
-          screenTop.innerText.includes('-') ||
-          screenTop.innerText.includes(divisionSign) ||
-          screenTop.innerText.includes(multiplicationSign)
-        ) {
-          screenTop.innerText = `${total} ${textSelection}`;
-          screenBottom.innerText = total;
-        } else {
-          screenTop.innerText += ` ${textSelection}`;
-        }
-      }
-      // If basic operands follow each other, only show one number
-      else {
-        screenBottom.innerText = total;
-        screenTop.innerText = `${total} ${textSelection}`;
-      }
-    }
-  }
-  lastTextSelection = textSelection;
-  lastOperand = operand;
-  lastClassSelection = classSelection;
-  previousNumber = Number(screenBottom.innerText);
-
-  // Stores which operand was pressed
-  if (operand === 'operand-basic') {
-    lastBasicOperand = classSelection;
-  }
-}
-
-function errorState(event) {
-  if (total === 'Cannot divide by zero') {
-  }
-}
-
-keys.forEach(key => key.addEventListener('click', calcFromRunningState));
-
-keys.forEach(key => key.addEventListener('click', calcIndependent));
-
-keys.forEach(key => key.addEventListener('click', calcFromBeginningState));
-
-keys.forEach(key => key.addEventListener('click', errorState));
