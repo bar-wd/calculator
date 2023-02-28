@@ -1,9 +1,12 @@
 'use-strict';
 
-const keys = document.querySelectorAll('.key');
-const screen = document.querySelector('.screen');
 const divisionSign = '\xF7';
 const multiplicationSign = '\xD7';
+const additionSign = '+';
+const subtractionSign = '-';
+const squaredSign = '\ud835\udc65' + '\xB2';
+const squareRootSign = '\u221A' + '\ud835\udc65';
+const fractionSign = '\xB9' + '/' + '\ud835\udc65';
 const screenBottom = document.querySelector('.screen-bottom');
 const screenTop = document.querySelector('.screen-top');
 
@@ -13,19 +16,16 @@ const screenTop = document.querySelector('.screen-top');
 const keyClearEntry = document.getElementById('key-clear-entry');
 const keyClearCalculator = document.getElementById('key-clear-calculator');
 const keyDelete = document.getElementById('key-delete');
-const keyAdd = document.getElementById('key-add');
 const keyNumbers = document.querySelectorAll('.number');
 const keyBasicOperands = document.querySelectorAll('.operand-basic');
 const keyPosNeg = document.getElementById('key-pos-neg');
 const keyDecimal = document.getElementById('key-decimal');
-const keySquared = document.getElementById('key-squared');
 const keyEquals = document.getElementById('key-equals');
+const keyAdvancedOperands = document.querySelectorAll('.operand-advanced');
 
 /////////////////////////////////////////////////////////////////////
 
-let total = 0;
-let previousTotal = false;
-let numForEquals;
+let operationsArray = [];
 
 const currentKey = {
   text: '',
@@ -58,7 +58,6 @@ function storeCurrentKey() {
   currentKey.text = event.target.textContent;
   currentKey.operand = event.target.classList[1];
   currentKey.operandType = event.target.classList[2];
-  previousTotal = total;
 }
 
 function storePreviousKey() {
@@ -70,47 +69,91 @@ function storePreviousKey() {
 function storePreviousBasicOperand() {
   previousBasicOperand.text = event.target.textContent;
   previousBasicOperand.operand = event.target.classList[1];
-  previousBasicOperandType = event.target.classList[2];
+  previousBasicOperand.operandType = event.target.classList[2];
 }
 
-function storePrevious() {
-  storePreviousKey();
-  storePreviousBasicOperand();
-  numForEquals = +screenBottom.innerText;
+function evalOperations(array) {
+  return array.reduce((acc, curr, index) => {
+    if (objFunc[curr]) {
+      return (acc = objFunc[curr](acc, array[index + 1]));
+    }
+
+    if (acc === Infinity) {
+      acc = 'Cannot divide by zero';
+    } else {
+      acc = objFunc.roundDecimals(acc);
+    }
+    return acc;
+  });
 }
-// function evalOperations(inpt) {
-//   // return array.reduce((acc, curr) => {
-//   //   acc = objFunc[curr](acc);
-//   //   console.log(acc, 'acc');
-//   //   return acc;
-//   // });
-// }
+
+/////////////////////////////////////////////////////////////////////
+// Object of Functions
 
 const objFunc = {
   equals: function (event) {
     storeCurrentKey();
 
-    // Prevents from being able to repeatedly press '=' in the beginning
+    // Round input number
+    screenBottom.innerText = objFunc.roundDecimals(+screenBottom.innerText);
 
-    if (!previousBasicOperand.operand) {
-      `${total} ${currentKey.text}`;
-      screenBottom.innerText = total;
+    // Allows for repeated '=' pressing
+    if (previousKey.operandType === 'operand-equals') {
+      // Formatting with only one number
+      if (operationsArray.length === 1) {
+      } else {
+        // Prevents multiple '=' from appearing in the array
+        operationsArray.splice(-1, 1, '=');
+        screenTop.innerText = operationsArray.join(' ');
+
+        // Evaluate
+        let result = evalOperations(operationsArray);
+        // Splice in the result leaving the current operand for repeated '=' presses
+        operationsArray.splice(0, 1, result);
+
+        screenBottom.innerText = result;
+      }
     }
-    //   previousBasicOperand.text
-    // } ${+screenBottom.innerText} ${currentKey.text}`;
-    // screenBottom.innerText = total;
+    // Formatting when followed by an 'operand-advanced'
+    else if (operationsArray.length > 3) {
+      operationsArray.splice(0, 5, +screenBottom.innerText);
+      screenTop.innerText = operationsArray.join(' ');
+    }
 
-    // Repeatedly pressing the '='
-    else if (previousKey.operandType === 'operand-equals') {
-      objFunc[previousBasicOperand.operand](numForEquals);
-      screenTop.innerText = `${previousTotal} ${previousBasicOperand.text} ${numForEquals} ${currentKey.text}`;
-      screenBottom.innerText = total;
+    // Doesn't push num if followed by 'operand-advanced'
+    else if (operationsArray.length === 3) {
+      operationsArray.push('=');
+      screenTop.innerText = operationsArray.join(' ');
+
+      // Evaluate
+      let result = evalOperations(operationsArray);
+      // Splice in the result leaving the current operand for repeated '=' presses
+      operationsArray.splice(0, 1, result);
+
+      screenBottom.innerText = result;
+    }
+
+    // 'operand-advanced' Formatting
+    else if (previousKey.operandType === 'operand-advanced') {
+      screenTop.innerText += ' =';
     } else {
-      objFunc[previousBasicOperand.operand](+screenBottom.innerText);
-      screenTop.innerText = `${previousTotal} ${
-        previousBasicOperand.text
-      } ${+screenBottom.innerText} ${currentKey.text}`;
-      screenBottom.innerText = total;
+      operationsArray.push(+screenBottom.innerText);
+      operationsArray.push('=');
+      screenTop.innerText = operationsArray.join(' ');
+
+      // Evaluate
+      let result = evalOperations(operationsArray);
+
+      // Splice in the result leaving the current operand for repeated '=' presses
+
+      operationsArray.splice(0, 1, result);
+      screenBottom.innerText = result;
+
+      // If divided by 0
+      if (isNaN(result)) {
+        objFunc.clear();
+        screenBottom.innerText = 'Cannot divide by zero';
+      }
     }
 
     storePreviousKey();
@@ -118,143 +161,123 @@ const objFunc = {
   funcBasicOperands: function (event) {
     storeCurrentKey();
 
-    // Prevents being able to repeatedly press a basic operand
-    if (
-      currentKey.operandType === 'operand-basic' &&
-      previousKey.operandType === 'operand-basic'
+    // Round input number
+    screenBottom.innerText = objFunc.roundDecimals(+screenBottom.innerText);
+
+    if (operationsArray.length === 0) {
+      // Push to operationsArray
+      operationsArray.push(+screenBottom.innerText);
+      operationsArray.push(currentKey.text);
+      // Set the top screen display
+      screenTop.innerText = operationsArray.join(' ');
+    }
+    // Switches the basic operand and prevents repeated pressing
+    else if (
+      previousKey.operandType === 'operand-basic' &&
+      currentKey.operandType === 'operand-basic'
     ) {
-      previousKey.operand = currentKey.operand;
-    } else if (previousKey.operandType === 'operand-equals') {
-      screenTop.innerText = `${total} ${currentKey.text}`;
-      screenBottom.innerText = total;
+      operationsArray.splice(1, 1, currentKey.text);
+      screenTop.innerText = operationsArray.join(' ');
+    }
+    // Following an '='
+    else if (operationsArray.includes('=')) {
+      operationsArray.splice(1, 3, currentKey.text);
+      screenTop.innerText = operationsArray.join(' ');
+      screenBottom.innerText = operationsArray[0];
     } else {
-      total = objFunc[previousBasicOperand.operand]
-        ? objFunc[previousBasicOperand.operand](+screenBottom.innerText)
-        : +screenBottom.innerText;
+      operationsArray.push(+screenBottom.innerText);
 
-      screenTop.innerText = `${total} ${currentKey.text}`;
-      screenBottom.innerText = total;
+      // Evaluate
+      let result = evalOperations(operationsArray);
+      operationsArray = [result, currentKey.text];
+      screenTop.innerText = operationsArray.join(' ');
+      screenBottom.innerText = result;
     }
 
-    storePrevious();
-
-    // if (screenBottom.innerText === '0' || screenBottom.innerText === 0) {
-    //   screenTop.innerText = `0 ${textSelection}`;
-    // }
-    // // Basic operands must be followed by a number. Cannot repeatedly press a basic-operand key. However, it will change the symbol on the screen.
-    // else if (operand === 'operand-basic' && lastOperand === 'operand-basic') {
-    //   screenTop.innerText = `${total} ${textSelection}`;
-    // }
-    // // Basic operand at the beginning
-    // else if (lastBasicOperand === false) {
-    //   // If the initial number is a decimal, round to two decimal places
-    //   total += +screenBottom.innerText;
-
-    //   roundTotal();
-
-    //   screenTop.innerText = `${total} ${textSelection}`;
-    //   screenBottom.innerText = total;
-    //   // If an operand advanced proceeds a basic operand
-    // } else if (lastOperand === 'operand-advanced') {
-    //   // If it already contains the following, make screenTop the total
-    //   if (
-    //     screenTop.innerText.includes('+') ||
-    //     screenTop.innerText.includes('-') ||
-    //     screenTop.innerText.includes(divisionSign) ||
-    //     screenTop.innerText.includes(multiplicationSign)
-    //   ) {
-    //     total += +screenBottom.innerText;
-    //     screenTop.innerText = `${total} ${textSelection}`;
-    //     screenBottom.innerText = `${total}`;
-    //   } else {
-    //     screenTop.innerText += ` ${textSelection}`;
-    //     total += +screenBottom.innerText;
-    //   }
-    // } else {
-    //   // Call the appropriate function from objFunc based on lastBasicOperand
-    //   console.log(lastBasicOperand);
-    //   objFunc[lastBasicOperand](+screenBottom.innerText);
-
-    //   // Check to see if divided by 0
-    //   if (total === 'Cannot divide by zero') {
-    //     screenTop.innerText = '';
-    //     screenBottom.innerText = total;
-    //   } else {
-    //     screenTop.innerText = `${total} ${textSelection}`;
-    //     screenBottom.innerText = total;
-    //   }
-    // }
-  },
-
-  add: function (num) {
-    total += num;
-    roundTotal();
-    return total;
-  },
-  subtract: function (num) {
-    total -= num;
-    roundTotal();
-    return total;
-  },
-  multiply: function (num) {
-    total *= num;
-    roundTotal();
-    return total;
-  },
-  divide: function (num) {
-    if (num === 0) {
-      total = 'Cannot divide by zero';
-      return total;
-    } else {
-      total /= num;
-      roundTotal();
-
-      return total;
+    // Check if divided by zero
+    if (screenBottom.innerText === 'Cannot divide by zero') {
+      objFunc.clear();
+      screenBottom.innerText = 'Cannot divide by zero';
     }
+
+    storePreviousKey();
+    storePreviousBasicOperand();
   },
-  squareRoot: function (num) {
-    return roundDecimals(Math.sqrt(num));
+
+  [additionSign]: function (num1, num2) {
+    return num1 + num2;
+  },
+  [subtractionSign]: function (num1, num2) {
+    return num1 - num2;
+  },
+  [multiplicationSign]: function (num1, num2) {
+    return num1 * num2;
+  },
+  [divisionSign]: function (num1, num2) {
+    return num1 / num2;
+  },
+  [squareRootSign]: function (num) {
+    return objFunc.roundDecimals(Math.sqrt(num));
+  },
+
+  [squaredSign]: function (num) {
+    return num * num;
   },
   squared: function (event) {
     storeCurrentKey();
 
-    // If squared is pressed repeatedly, keep adding sqr() to screen top
-    if (lastOperand === 'operand-advanced') {
-      screenTop.innerText = 'sqr(' + screenTop.innerText + ')';
-      screenBottom.innerText = `${
-        +screenBottom.innerText * +screenBottom.innerText
-      }`;
-    } else {
-      // If last operation was an operand-advanced, replace the text
-      if (
-        lastOperand === 'operand-advanced' &&
-        operand === 'operand-advanced'
-      ) {
-        screenTop.innerText = `sqr(${+screenBottom.innerText})`;
-        screenBottom.innerText = `${squared(+screenBottom.innerText)}`;
+    // Repeated squared presses
+    if (previousKey.operandType === 'operand-advanced') {
+      operationsArray.splice(
+        -1,
+        1,
+        objFunc[currentKey.text](+screenBottom.innerText)
+      );
+    }
+    // Squaring after an '=' or a number key
+    else if (
+      previousKey.operandType === 'operand-equals' ||
+      previousKey.operandType === 'number'
+    ) {
+      if (operationsArray.length === 4) {
+        operationsArray.splice(
+          0,
+          4,
+          objFunc[currentKey.text](+screenBottom.innerText)
+        );
+      }
+      // If number key after a 'operand-basic'
+      else if (operationsArray.length === 2) {
+        operationsArray.push(objFunc[currentKey.text](+screenBottom.innerText));
       } else {
-        screenTop.innerText += ` sqr(${+screenBottom.innerText})`;
-        screenBottom.innerText = `${
-          +screenBottom.innerText * +screenBottom.innerText
-        }`;
+        operationsArray.splice(
+          -1,
+          1,
+          objFunc[currentKey.text](+screenBottom.innerText)
+        );
       }
     }
+    // Pressing squared once
+    else {
+      operationsArray.push(objFunc[currentKey.text](+screenBottom.innerText));
+    }
 
-    lastBasicOperand = classSelection;
-    lastOperand = operand;
+    // Display bottom screen
+    screenBottom.innerText = objFunc[currentKey.text](+screenBottom.innerText);
+
+    // Display top screen
+    screenTop.innerText = operationsArray.join(' ');
+
+    storePreviousKey();
   },
-  fraction: function (num) {
-    total = 1 / num;
-    roundTotal();
-    return total;
+  [fractionSign]: function (num) {
+    return 1 / num;
   },
 
   clear: function (event) {
-    total = 0;
-    previousTotal = false;
-    numForEquals;
     screenBottom.innerText = 0;
     screenTop.innerText = '';
+    operationsArray = [];
 
     for (key in currentKey) {
       currentKey[key] = '';
@@ -267,26 +290,40 @@ const objFunc = {
     for (key in previousBasicOperand) {
       previousBasicOperand[key] = '';
     }
-
-    numForEquals = '';
   },
   // Clearing the current entry
   clearEntry: function (event) {
-    screenBottom.innerText = 0;
+    // Following an '='  or 'operand-basic' it clears the calculator
+    if (previousKey.operandType === 'operand-equals') {
+      objFunc.clear();
+    }
+    // Following an 'operand-advanced'
+    else if (previousKey.operandType === 'operand-advanced') {
+      operationsArray.splice(-1, 1);
+
+      screenTop.innerText = operationsArray.join(' ');
+      screenBottom.innerText = 0;
+    } else {
+      screenBottom.innerText = 0;
+    }
+    storePreviousKey();
   },
   // Delete a number
   delete: function () {
     if (screenBottom.innerText.length === 1) {
       screenBottom.innerText = 0;
     }
-
-    // else if (
-    //   lastOperand === 'operand-basic' ||
-    //   lastOperand === 'operand-advanced'
-    // ) {
-    //   return;
-    // }
-    else {
+    // Can't delete following a 'operand'
+    else if (
+      previousKey.operandType === 'operand-basic' ||
+      previousKey.operandType === 'operand-advanced'
+    ) {
+      return;
+    }
+    // Delete clears screenTop.innerText following '='
+    else if (previousKey.operandType === 'operand-equals') {
+      screenTop.innerText = '';
+    } else {
       screenBottom.innerText = screenBottom.innerText.slice(0, -1);
     }
   },
@@ -296,64 +333,78 @@ const objFunc = {
 
   inputNum: function () {
     storeCurrentKey();
-
     if (
       screenBottom.innerText === '0' ||
       previousKey.operandType === 'operand-basic' ||
-      previousKey.operandType === 'operand-advanced'
+      previousKey.operandType === 'operand-advanced' ||
+      screenBottom.innerText === 'Cannot divide by zero'
     ) {
+      screenBottom.innerText = +currentKey.text;
+    }
+    // Following an '='
+    else if (previousKey.operandType === 'operand-equals') {
+      objFunc.clear();
+      storeCurrentKey();
       screenBottom.innerText = +currentKey.text;
     } else {
       screenBottom.innerText += +currentKey.text;
     }
-    numForEquals = +screenBottom.innerText;
     storePreviousKey();
   },
   // Decimal Functionality
   displayDecimal: function () {
     storeCurrentKey();
     // Only one decimal allowed
-    if (screenBottom.innerText.includes('.')) return;
-    else {
+    if (screenBottom.innerText.includes('.')) {
+      if (previousKey.operandType === 'operand-equals') {
+        objFunc.clear();
+        screenBottom.innerText += '.';
+      }
+      // Following 'operand-advanced' with a decimal already
+      else if (previousKey.operandType === 'operand-advanced') {
+        if (operationsArray.length <= 2) {
+          operationsArray.splice(-1, 1);
+          screenBottom.innerText = '0.';
+        } else {
+          operationsArray.splice(-1, 1);
+          screenBottom.innerText = '0.';
+          screenTop.innerText = operationsArray.join(' ');
+        }
+      }
+      // Following 'operand-basic' with a decimal
+      else if (previousKey.operandType === 'operand-basic') {
+        screenBottom.innerText = '0.';
+      } else {
+        return;
+      }
+    } else if (previousKey.operandType === 'operand-equals') {
+      objFunc.clear();
       screenBottom.innerText += '.';
     }
+    // Following 'operand-advanced'
+    else if (previousKey.operandType === 'operand-advanced') {
+      if (operationsArray.length === 3) {
+        operationsArray.splice(-1, 1);
+        screenTop.innerText = operationsArray.join(' ');
+        screenBottom.innerText = '0.';
+      } else {
+        operationsArray.splice(-1, 1);
+        screenBottom.innerText = '0.';
+      }
+    }
+    // Following 'operand-basic' with a decimal
+    else if (previousKey.operandType === 'operand-basic') {
+      screenBottom.innerText = '0.';
+    } else {
+      screenBottom.innerText += '.';
+    }
+    storePreviousKey();
+  },
+
+  roundDecimals: function (input) {
+    return Number.isInteger(input) ? input : Number((+input).toFixed(2));
   },
 };
-
-//////////////////////////////////////////////////////////////////////
-// Rounding Functions
-
-function roundTotal() {
-  Number.isInteger(total)
-    ? (total = total)
-    : (total = Number(+total.toFixed(2)));
-  return total;
-}
-
-function roundDecimals(input) {
-  Number.isInteger(input)
-    ? (input = input)
-    : (input = Number(+input.toFixed(2)));
-  return input;
-}
-function calcFromBeginningState(event) {
-  // If one of the basic operands is pressed (add, subtract, divide, multiply)
-  if (operand === 'operand-basic') {
-    // If the initial number is a decimal, round to two decimal places
-    total = Number(screenBottom.innerText);
-    roundDecimals(total);
-    screenTop.innerText = `${total} ${textSelection}`;
-    screenBottom.innerText = total;
-  }
-}
-
-///////////////////////////////////////////////////////////////////////
-// If there is a running total
-
-function errorState(event) {
-  if (total === 'Cannot divide by zero') {
-  }
-}
 
 ///////////////////////////////////////////////////////////////////////
 // Event Listeners
@@ -381,103 +432,10 @@ keyDelete.addEventListener('click', objFunc['delete']);
 // Decimal
 keyDecimal.addEventListener('click', objFunc['displayDecimal']);
 
-// Squared
-keySquared.addEventListener('click', objFunc['squared']);
+// Squared, square root, fraction
+keyAdvancedOperands.forEach(key =>
+  key.addEventListener('click', objFunc['squared'])
+);
 
 // Equals
 keyEquals.addEventListener('click', objFunc['equals']);
-
-function calcFromRunningState(event) {
-  // Repeatedly pressing '=' will compute correctly
-  if (textSelection === '=' && lastTextSelection === '=') {
-    screenTop.innerText = `${total} ${operandForRepeatedEquals} ${multipleEqualSigns} ${textSelection}`;
-    if (operandForRepeatedEquals === '+') {
-      add(multipleEqualSigns);
-    } else if (operandForRepeatedEquals === '-') {
-      subtract(multipleEqualSigns);
-    } else if (operandForRepeatedEquals === multiplicationSign) {
-      multiply(multipleEqualSigns);
-    } else if (operandForRepeatedEquals === divisonSign) {
-      divide(multipleEqualSigns);
-    }
-
-    screenBottom.innerText = total;
-
-    // If '=' is pressed, then display 'num + num = ' otherwise display only one number
-    if (textSelection === '=') {
-      if (textSelection === '=' && lastOperand === 'operand-advanced') {
-        screenTop.innerText += ` ${textSelection}`;
-        screenBottom.innerText = total;
-      } else {
-        if (total === 'Cannot divide by zero') {
-          screenBottom.innerText = total;
-          screenTop.innerText = '';
-        } else {
-          screenTop.innerText += ` ${screenBottom.innerText} ${textSelection}`;
-          screenBottom.innerText = total;
-        }
-      }
-    }
-
-    // If the last operand was advanced, don't clear the top screen, unless there is already two numbers
-    if (lastOperand === 'operand-advanced') {
-      if (
-        screenTop.innerText.includes('+') ||
-        screenTop.innerText.includes('-') ||
-        screenTop.innerText.includes(divisionSign) ||
-        screenTop.innerText.includes(multiplicationSign)
-      ) {
-        screenTop.innerText = `${total} ${textSelection}`;
-        screenBottom.innerText = total;
-      } else {
-        screenTop.innerText += ` ${textSelection}`;
-      }
-    }
-    // If basic operands follow each other, only show one number
-    else {
-      screenBottom.innerText = total;
-      screenTop.innerText = `${total} ${textSelection}`;
-    }
-  }
-}
-
-function calcIndependent(event) {
-  // If an advanced operand is pressed
-  if (operand === 'operand-advanced') {
-    if (classSelection === 'fraction') {
-      // Cannot divide by zero
-      if (+screenBottom.innerText === 0) {
-        screenBottom.innerText = 'Cannot divide by zero';
-        screenTop.innerText = '';
-      } else {
-        screenTop.innerText = `1/(${screenBottom.innerText})`;
-        fraction(+screenBottom.innerText);
-        screenBottom.innerText = total;
-      }
-    }
-
-    if (classSelection === 'square-root') {
-      // If square root is pressed repeatedly, keep adding sqrt() to screen top
-
-      if (lastClassBeginning === 'square-root') {
-        screenTop.innerText =
-          `${textSelection.slice(0, 1)}(` + screenTop.innerText + ')';
-        screenBottom.innerText = `${squareRoot(+screenBottom.innerText)}`;
-      }
-
-      if (
-        lastOperand === 'operand-advanced' &&
-        operand === 'operand-advanced'
-      ) {
-        screenTop.innerText = `sqr(${+screenBottom.innerText})`;
-        screenBottom.innerText = `${squareRoot(+screenBottom.innerText)}`;
-      } else {
-        screenTop.innerText += ` ${textSelection.slice(
-          0,
-          1
-        )}(${+screenBottom.innerText})`;
-        screenBottom.innerText = `${squareRoot(+screenBottom.innerText)}`;
-      }
-    }
-  }
-}
