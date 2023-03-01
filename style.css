@@ -19,6 +19,7 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  background-color: #f2a90057;
 }
 
 .main-container {
@@ -31,22 +32,38 @@ body {
   align-items: stretch;
   padding: 20px;
   gap: 20px;
+  background-color: #f2a900e3;
+  border-radius: 15%;
 }
 
 .screen {
   border: solid black 5px;
-  flex: 0.35;
+  min-height: 175px;
+  overflow: auto;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+
+  justify-content: space-between;
   align-items: flex-end;
   gap: 30px;
-  padding: 10px;
+  background-color: #4d4d4e6c;
+  font-weight: bold;
+  color: #ffffff;
+  font-size: 60px;
+  border-radius: 15%;
 }
 
 .screen-top {
-  position: absolute;
-  margin-bottom: 40px;
+  font-size: 30px;
+  padding-right: 15px;
+  padding-top: 5px;
+  flex: 1;
+}
+
+.screen-bottom {
+  flex: 1;
+  /* align-self: ; */
+  padding-right: 15px;
 }
 
 .keys-container {
@@ -57,20 +74,39 @@ body {
   justify-content: center;
   align-items: stretch;
   padding: 5px;
+  background-color: #4d4d4ead;
+  color: #ffffff;
+  font-weight: bold;
+  font-size: 30px;
+  border-radius: 10%;
 }
 
 .keys-row-container {
-  border: solid black 1px;
+  /* border: solid black 1px; */
   flex: 1;
   display: flex;
   gap: 3px;
+  border-radius: 10%;
 }
 
 .key {
-  border: solid black 1px;
+  border: solid #f2a900 1px;
   flex: 1;
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
+  border-radius: 30%;
+  background-color: #4d4d4e9c;
+}
+
+.key:hover {
+  background-color: #eef200af;
+}
+
+.hidden {
+  font-size: 35px;
+  padding-top: 20px;
+  padding-right: 5px;
+  display: none;
 }

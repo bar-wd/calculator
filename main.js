@@ -9,6 +9,7 @@ const squareRootSign = '\u221A' + '\ud835\udc65';
 const fractionSign = '\xB9' + '/' + '\ud835\udc65';
 const screenBottom = document.querySelector('.screen-bottom');
 const screenTop = document.querySelector('.screen-top');
+const errorMsg = document.querySelector('.hidden');
 
 /////////////////////////////////////////////////////////////////////
 // Calculator Keys
@@ -25,6 +26,7 @@ const keyAdvancedOperands = document.querySelectorAll('.operand-advanced');
 
 /////////////////////////////////////////////////////////////////////
 
+const limitDecimals = /\.[0-9]{2}/;
 let operationsArray = [];
 
 const currentKey = {
@@ -58,6 +60,7 @@ function storeCurrentKey() {
   currentKey.text = event.target.textContent;
   currentKey.operand = event.target.classList[1];
   currentKey.operandType = event.target.classList[2];
+  clearErrorMsg();
 }
 
 function storePreviousKey() {
@@ -85,6 +88,13 @@ function evalOperations(array) {
     }
     return acc;
   });
+}
+
+function clearErrorMsg() {
+  if (errorMsg.style.display === 'inline') {
+    errorMsg.style.display = 'none';
+    objFunc.clear();
+  }
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -152,7 +162,9 @@ const objFunc = {
       // If divided by 0
       if (isNaN(result)) {
         objFunc.clear();
-        screenBottom.innerText = 'Cannot divide by zero';
+        errorMsg.style.display = 'inline';
+        screenBottom.innerText = '';
+        // screenBottom.innerText = 'Cannot divide by zero';
       }
     }
 
@@ -197,7 +209,8 @@ const objFunc = {
     // Check if divided by zero
     if (screenBottom.innerText === 'Cannot divide by zero') {
       objFunc.clear();
-      screenBottom.innerText = 'Cannot divide by zero';
+      screenBottom.innerText = '';
+      errorMsg.style.display = 'inline';
     }
 
     storePreviousKey();
@@ -221,7 +234,7 @@ const objFunc = {
   },
 
   [squaredSign]: function (num) {
-    return num * num;
+    return objFunc.roundDecimals(num * num);
   },
   squared: function (event) {
     storeCurrentKey();
@@ -247,7 +260,16 @@ const objFunc = {
         );
       }
       // If number key after a 'operand-basic'
-      else if (operationsArray.length === 2) {
+      else if (
+        operationsArray.length === 2 &&
+        previousKey.operandType === 'operand-equals'
+      ) {
+        operationsArray.splice(
+          0,
+          2,
+          objFunc[currentKey.text](+screenBottom.innerText)
+        );
+      } else if (operationsArray.length === 2) {
         operationsArray.push(objFunc[currentKey.text](+screenBottom.innerText));
       } else {
         operationsArray.splice(
@@ -271,17 +293,18 @@ const objFunc = {
     storePreviousKey();
   },
   [fractionSign]: function (num) {
-    return 1 / num;
+    return objFunc.roundDecimals(1 / num);
   },
 
   clear: function (event) {
+    storeCurrentKey();
     screenBottom.innerText = 0;
     screenTop.innerText = '';
     operationsArray = [];
 
-    for (key in currentKey) {
-      currentKey[key] = '';
-    }
+    // for (key in currentKey) {
+    //   currentKey[key] = '';
+    // }
 
     for (key in previousKey) {
       previousKey[key] = '';
@@ -293,6 +316,7 @@ const objFunc = {
   },
   // Clearing the current entry
   clearEntry: function (event) {
+    storeCurrentKey();
     // Following an '='  or 'operand-basic' it clears the calculator
     if (previousKey.operandType === 'operand-equals') {
       objFunc.clear();
@@ -333,18 +357,25 @@ const objFunc = {
 
   inputNum: function () {
     storeCurrentKey();
+
+    // Only allow 2 decimal places
     if (
+      limitDecimals.test(screenBottom.innerText) &&
+      previousKey.operandType === 'number'
+    ) {
+      return;
+    }
+
+    // Following an '='
+    if (previousKey.operandType === 'operand-equals') {
+      objFunc.clear();
+      screenBottom.innerText = +currentKey.text;
+    } else if (
       screenBottom.innerText === '0' ||
       previousKey.operandType === 'operand-basic' ||
       previousKey.operandType === 'operand-advanced' ||
       screenBottom.innerText === 'Cannot divide by zero'
     ) {
-      screenBottom.innerText = +currentKey.text;
-    }
-    // Following an '='
-    else if (previousKey.operandType === 'operand-equals') {
-      objFunc.clear();
-      storeCurrentKey();
       screenBottom.innerText = +currentKey.text;
     } else {
       screenBottom.innerText += +currentKey.text;
@@ -402,7 +433,7 @@ const objFunc = {
   },
 
   roundDecimals: function (input) {
-    return Number.isInteger(input) ? input : Number((+input).toFixed(2));
+    return Number.isInteger(input) ? input : Number((+input).toFixed(4));
   },
 };
 
